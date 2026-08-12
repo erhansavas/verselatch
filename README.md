@@ -6,6 +6,8 @@
 VerseLatch is a GTK 4/libadwaita desktop application for creating, verifying,
 editing, and saving synchronized LRC timing against local audio.
 
+<img width="850" alt="VerseLatch 1.0.0" src="https://github.com/user-attachments/assets/afc4ef16-f3de-47fc-8748-4d49017ff348">
+
 - **Generate Draft** creates an editable ASR draft when no lyrics file is selected.
 - **Verify & Align** keeps existing lyric text authoritative and uses ASR evidence to
   check and correct timing.
