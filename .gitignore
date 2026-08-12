@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/

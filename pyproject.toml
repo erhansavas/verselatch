@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "verselatch"
+version = "1.0.0"
+description = "Desktop application for creating, verifying, editing, and aligning LRC timing."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-3.0-only"
+license-files = [
+    "LICENSE",
+    "LICENSES/GPL-3.0-only.txt",
+]
+authors = [
+    { name = "erhansavas" },
+]
+maintainers = [
+    { name = "erhansavas" },
+]
+
+[project.urls]
+Homepage = "https://github.com/erhansavas/verselatch"
+Repository = "https://github.com/erhansavas/verselatch.git"
+Issues = "https://github.com/erhansavas/verselatch/issues"
+# Runtime integration is intentionally not expressed as PyPI dependencies.
+# VerseLatch relies on distro-provided GTK/libadwaita/PyGObject, whisper.cpp,
+# and aubio; see docs/DEPENDENCIES.md and docs/SYSTEM_REQUIREMENTS.md.
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = ["verselatch"]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["verselatch_core*"]
+namespaces = false
+
+[dependency-groups]
+test = [
+    "pytest>=8.4",
+]
+lint = [
+    "ruff>=0.12",
+]
+security = [
+    "bandit>=1.9",
+    "defusedxml>=0.7.1",
+]
+build = [
+    "build>=1.2",
+]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "security" },
+    { include-group = "build" },
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-config --strict-markers --import-mode=importlib --disable-plugin-autoload"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = ["LICENSES"]
+
+# Keep the mandatory lint gate focused on correctness failures. Broader style
+# refactors are reviewed separately so a late formatting sweep cannot obscure
+# behavioral changes in the GTK coordination module.
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E501"]

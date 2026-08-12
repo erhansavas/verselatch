@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+version = 1
+
+# These generated/plain data files cannot carry reliable inline comments.
+[[annotations]]
+path = ["SHA256SUMS", "docs/THIRD_PARTY_NOTICES.txt"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 erhansavas"
+SPDX-License-Identifier = "GPL-3.0-only"

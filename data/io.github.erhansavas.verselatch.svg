@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 erhansavas -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- First-party VerseLatch artwork: lyric lines latching onto a timing rail. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="VerseLatch icon">
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="#30343b"/>
+  <path d="M31 40H72 M31 64H84 M31 88H68" fill="none" stroke="#f6f5f4" stroke-width="8" stroke-linecap="round"/>
+  <path d="M92 30V98" fill="none" stroke="#99c1f1" stroke-width="7" stroke-linecap="round"/>
+  <path d="M84 64H98" fill="none" stroke="#99c1f1" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="92" cy="64" r="5" fill="#f6f5f4"/>
+</svg>

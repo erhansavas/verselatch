@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+set -Eeuo pipefail
+umask 077
+PATH="/usr/bin:/bin"
+export PATH
+
+if [[ -z "${HOME-}" || "${HOME}" != /* ]]; then
+    echo "VerseLatch: HOME must be an absolute path." >&2
+    exit 1
+fi
+
+APP="/usr/lib/verselatch/verselatch.py"
+if [[ ! -f "${APP}" || -L "${APP}" ]]; then
+    echo "VerseLatch: installed application payload is missing or unsafe." >&2
+    exit 1
+fi
+
+exec /usr/bin/python3 -E -s -B "${APP}" "$@"

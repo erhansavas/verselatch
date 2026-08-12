@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 erhansavas -->
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<!-- First-party symbolic derivative of the VerseLatch timing-rail mark. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <g fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
+    <path d="M2.2 4.2h5.2M2.2 8h6.8M2.2 11.8h4.7"/>
+    <path d="M10.3 2.2v11.6M9 8h2.6"/>
+  </g>
+  <circle cx="10.3" cy="8" r="1.15" fill="#000"/>
+</svg>

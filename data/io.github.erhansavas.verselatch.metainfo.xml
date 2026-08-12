@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-FileCopyrightText: 2026 erhansavas -->
+<!-- SPDX-License-Identifier: MIT -->
+<component type="desktop-application">
+  <id>io.github.erhansavas.verselatch</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>VerseLatch</name>
+  <summary>Create and align LRC timing</summary>
+  <developer id="io.github.erhansavas">
+    <name>erhansavas</name>
+  </developer>
+  <launchable type="desktop-id">io.github.erhansavas.verselatch.desktop</launchable>
+  <url type="homepage">https://github.com/erhansavas/verselatch</url>
+  <url type="bugtracker">https://github.com/erhansavas/verselatch/issues</url>
+  <description>
+    <p>VerseLatch creates synchronized LRC timing from audio, or verifies and aligns an existing LRC or text lyrics file against a recording.</p>
+    <p>Generated speech-recognition text remains an editable draft. Existing lyrics are preserved during Verify &amp; Align. Results must be reviewed before they can be saved; analysis runs on the user's device without telemetry or a background service.</p>
+  </description>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+  </categories>
+  <keywords>
+    <keyword>lyrics</keyword>
+    <keyword>LRC</keyword>
+    <keyword>timing</keyword>
+    <keyword>alignment</keyword>
+  </keywords>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.0.0" date="2026-08-12">
+      <description>
+        <p>Initial release with LRC draft generation, Verify &amp; Align, editable review, and review-before-save safeguards.</p>
+      </description>
+    </release>
+  </releases>
+</component>

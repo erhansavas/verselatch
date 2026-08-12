@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+MAX_ASR_TEXT_CHARS = 4000
+MAX_LYRICS_BYTES = 4 * 1024 * 1024
+MAX_LYRIC_LINES = 300
+MAX_ASR_SEGMENTS = 600
+

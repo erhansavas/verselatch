@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+name: Feature request
+description: Propose a focused change that fits VerseLatch's local-first scope
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete workflow problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Keep the proposal compatible with offline/local operation and explicit review before saving.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Simpler alternatives considered
+      description: Explain whether the goal can be met without adding network, background-service, or account scope.

@@ -1,0 +1,85 @@
+VerseLatch 1.0.0 — Third-Party Notices
+====================================
+
+VerseLatch source
+---------------
+Copyright (C) 2026 erhansavas
+License: GNU General Public License v3.0 only
+SPDX identifier: GPL-3.0-only
+See LICENSE, LICENSING.md, and LICENSES/GPL-3.0-only.txt.
+
+No third-party source, executable, Python package, model, audio, lyrics, font,
+or externally sourced graphic asset is bundled in this source ZIP. The bundled
+VerseLatch SVG icon and desktop metadata are original first-party project files. The items below are separately
+installed system dependencies or a separately downloaded model. Their own
+licenses and notices continue to apply.
+
+whisper.cpp
+-----------
+Copyright (c) 2023-2026 The ggml authors
+Upstream: https://github.com/ggml-org/whisper.cpp
+License: MIT
+License text: https://github.com/ggml-org/whisper.cpp/blob/master/LICENSE
+VerseLatch invokes the user's system whisper-cli executable; it does not bundle
+whisper.cpp source or binaries.
+
+OpenAI Whisper / Large v3 Turbo model
+-------------------------------------
+Copyright (c) 2022 OpenAI
+Upstream code and model: https://github.com/openai/whisper
+License: MIT
+License text: https://github.com/openai/whisper/blob/main/LICENSE
+
+Converted model repository:
+https://huggingface.co/ggerganov/whisper.cpp
+Pinned revision: 98aa99a0a9db05ae2342309f5096248665f7cba3
+File: ggml-large-v3-turbo.bin
+Size: 1,624,555,275 bytes
+SHA-256: 1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69
+
+The model is not included in this ZIP. If necessary, the installer downloads
+that immutable revision over HTTPS and accepts it only after exact size and
+SHA-256 verification.
+
+aubio
+-----
+Upstream: https://aubio.org/
+Arch package license: GPL-3.0-or-later
+VerseLatch invokes the separately installed aubiotrack and aubioonset commands.
+
+GTK 4, libadwaita, and PyGObject
+--------------------------------
+Upstreams:
+https://gitlab.gnome.org/GNOME/gtk
+https://gitlab.gnome.org/GNOME/libadwaita
+https://gitlab.gnome.org/GNOME/pygobject
+Arch package license for each: LGPL-2.1-or-later
+These are separately installed system libraries/bindings.
+
+Python
+------
+Upstream: https://www.python.org/
+Arch package license: PSF-2.0
+Python is a separately installed system interpreter.
+
+util-linux prlimit
+------------------
+Upstream: https://github.com/util-linux/util-linux
+prlimit source license: GPL-2.0-or-later
+VerseLatch invokes the separately installed prlimit command to impose kernel
+file-size limits on native analysis children.
+
+curl
+----
+Upstream: https://curl.se/
+License: curl license
+curl is not a runtime dependency. The installer invokes the separately
+installed command only when it must download the missing pinned model.
+
+User content
+------------
+VerseLatch does not bundle lyrics, copyrighted recordings, lyric databases, or
+scraped catalogs. Built-in regression fixtures use fictional text only. Users
+are responsible for rights and permissions applicable to audio/lyrics they
+choose to process or share. The VerseLatch license does not grant rights to
+third-party songs, recordings, or lyrics.

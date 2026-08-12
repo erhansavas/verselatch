@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+
+name: Bug report
+description: Report a reproducible non-security problem in VerseLatch
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not report security vulnerabilities here. Use the private route in the repository security policy."
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use non-sensitive sample data where possible. Do not upload private lyrics or audio unless you intend to disclose them publicly.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: VerseLatch version
+      placeholder: "verselatch --version"
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: Paste relevant non-sensitive output from `verselatch --diagnostics`. Review it before posting.
