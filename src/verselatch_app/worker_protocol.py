@@ -62,13 +62,37 @@ def _validate_resource_ref(value: str, *, name: str) -> None:
         raise WorkerProtocolError(f"invalid {name}")
 
 
+def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise WorkerProtocolError("worker response contains duplicate JSON keys")
+        result[key] = value
+    return result
+
+
+def _reject_nonfinite_constant(value: str) -> object:
+    raise WorkerProtocolError(f"worker response contains non-finite number: {value}")
+
+
+def _bounded_json_int(value: str) -> int:
+    digits = value[1:] if value.startswith("-") else value
+    if len(digits) > 20:
+        raise WorkerProtocolError("worker response integer is out of bounds")
+    return int(value)
+
+
 def encode_request(request: WorkerRequest) -> bytes:
     """Encode one deterministic worker request and enforce its input bounds."""
     if not _valid_request_id(request.request_id):
         raise WorkerProtocolError("invalid request id")
     _validate_resource_ref(request.audio_ref, name="audio reference")
     _validate_resource_ref(request.model_ref, name="model reference")
-    if not request.language or len(request.language) > MAX_LANGUAGE_CHARS:
+    if (
+        not request.language
+        or len(request.language) > MAX_LANGUAGE_CHARS
+        or "\x00" in request.language
+    ):
         raise WorkerProtocolError("invalid language")
     if request.lyrics is not None and "\x00" in request.lyrics:
         raise WorkerProtocolError("lyrics contain NUL")
@@ -104,9 +128,16 @@ def decode_response(data: bytes, *, expected_request_id: int) -> WorkerResponse:
     except UnicodeDecodeError as exc:
         raise WorkerProtocolError("worker response is not UTF-8") from exc
     try:
-        message = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise WorkerProtocolError("worker response is not valid JSON") from exc
+        message = json.loads(
+            text,
+            object_pairs_hook=_unique_object,
+            parse_constant=_reject_nonfinite_constant,
+            parse_int=_bounded_json_int,
+        )
+    except WorkerProtocolError:
+        raise
+    except (json.JSONDecodeError, RecursionError) as exc:
+        raise WorkerProtocolError("worker response is not valid bounded JSON") from exc
     if not isinstance(message, dict):
         raise WorkerProtocolError("worker response root must be an object")
 
