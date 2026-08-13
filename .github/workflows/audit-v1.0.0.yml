@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+name: Audit frozen v1.0.0
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-release:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    timeout-minutes: 20
+    steps:
+      - name: Install QA dependencies
+        run: >-
+          pacman -Syu --noconfirm --needed
+          git python python-pip python-setuptools python-pytest python-defusedxml
+          python-wheel ruff bandit shellcheck reuse desktop-file-utils appstream
+      - name: Check out frozen release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: v1.0.0
+          persist-credentials: false
+      - name: Verify exact frozen commit
+        run: test "$(git rev-parse HEAD)" = "c32efeb056fbc54d2a19fc768c3a4771fe067994"
+      - name: Run independent native quality gate
+        run: ./tools/quality_gate.sh --public-metadata
