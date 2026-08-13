@@ -18,13 +18,10 @@ class SaveController:
         result = self.state.result
         if result is None or not self.state.save_eligible:
             raise RuntimeError("reviewed result is not eligible for saving")
-        if not self.files.revalidate(result.audio):
-            self.state.revalidate_sources(audio=None, lyrics=self.state.lyrics)
-            raise RuntimeError("audio source changed before save")
-        if result.lyrics is not None and not self.files.revalidate(result.lyrics):
-            self.state.revalidate_sources(audio=self.state.audio, lyrics=None)
-            raise RuntimeError("lyrics source changed before save")
 
+        # FileService owns source revalidation and the safe write as one
+        # platform-native operation. A separate pre-check here would create a
+        # check/use race instead of improving safety.
         request = SaveRequest(
             content=self.state.preview,
             audio=result.audio,
