@@ -21,6 +21,7 @@ SRC = ROOT / "src"
 APP = SRC / "verselatch.py"
 CORE = SRC / "verselatch_core"
 APP_LAYER = SRC / "verselatch_app"
+PLATFORM = SRC / "verselatch_platform"
 DOCS = ROOT / "docs"
 PACKAGING = ROOT / "packaging" / "linux"
 MODEL_SHA = "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
@@ -149,7 +150,7 @@ for stale in (
 ):
     if (ROOT / stale).exists():
         fail(f"stale pre-refactor root path present: {stale}")
-for required_dir in (SRC, CORE, APP_LAYER, DOCS, PACKAGING, ROOT / "LICENSES", ROOT / ".github"):
+for required_dir in (SRC, CORE, APP_LAYER, PLATFORM, DOCS, PACKAGING, ROOT / "LICENSES", ROOT / ".github"):
     if not required_dir.is_dir() or required_dir.is_symlink():
         fail(f"required project directory missing or unsafe: {required_dir.relative_to(ROOT)}")
 for required_doc in (
@@ -204,9 +205,13 @@ if setuptools_cfg.get("package-dir") != {"": "src"}:
 if setuptools_cfg.get("py-modules") != ["verselatch"]:
     fail("setuptools must package the verselatch module")
 find_cfg = setuptools_cfg.get("packages", {}).get("find", {})
-expected_packages = ["verselatch_core*", "verselatch_app*"]
+expected_packages = [
+    "verselatch_core*",
+    "verselatch_app*",
+    "verselatch_platform*",
+]
 if find_cfg.get("where") != ["src"] or find_cfg.get("include") != expected_packages:
-    fail("setuptools package discovery must be restricted to first-party core/application packages")
+    fail("setuptools package discovery must be restricted to reviewed first-party packages")
 pytest_addopts = str(pytest_cfg.get("addopts", ""))
 for required_option in ("--import-mode=importlib", "--strict-config", "--strict-markers", "--disable-plugin-autoload"):
     if required_option not in pytest_addopts:
@@ -265,7 +270,12 @@ for path in python_sources:
                     fail(f"sys.path assignment forbidden: {path.relative_to(ROOT)}:{getattr(node, 'lineno', '?')}")
 
 # Runtime Python remains network-free and shell-free.
-runtime_python = [APP, *sorted(CORE.glob("*.py")), *sorted(APP_LAYER.glob("*.py"))]
+runtime_python = [
+    APP,
+    *sorted(CORE.glob("*.py")),
+    *sorted(APP_LAYER.glob("*.py")),
+    *sorted(PLATFORM.glob("*.py")),
+]
 for path in runtime_python:
     _, tree = parse_python(path)
     for node in ast.walk(tree):
