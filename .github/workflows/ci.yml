@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install --yes appstream desktop-file-utils shellcheck
           python -m pip install --disable-pip-version-check \
             'setuptools>=77.0.3' 'pytest>=8.4' 'ruff>=0.12' \
-            'bandit>=1.9' 'reuse>=3.3,<4' 'defusedxml>=0.7.1' 'build>=1.2'
+            'bandit>=1.9' 'reuse==6.2.0' 'defusedxml>=0.7.1' 'build>=1.2'
       - name: Portable build and regression gate
         run: ./tools/quality_gate.sh --portable --public-metadata
       - name: Portable external static gates
