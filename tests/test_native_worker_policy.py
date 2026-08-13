@@ -47,12 +47,13 @@ def test_native_worker_has_no_shell_network_or_child_process_surface() -> None:
 
 
 def test_native_worker_source_hygiene_and_spdx() -> None:
+    license_marker = "SPDX-" + "License-Identifier: GPL-3.0-only"
     for path in worker_text_files():
         data = path.read_bytes()
         assert b"\r\n" not in data, path.name
         text = data.decode("utf-8")
         head = "\n".join(text.splitlines()[:5])
-        assert "SPDX-License-Identifier: GPL-3.0-only" in head, path.name
+        assert license_marker in head, path.name
         for number, line in enumerate(text.splitlines(), start=1):
             assert not line.endswith((" ", "\t")), f"trailing whitespace {path.name}:{number}"
 
