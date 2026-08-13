@@ -42,6 +42,8 @@ def test_request_rejects_invalid_identity_and_nul() -> None:
         encode_request(WorkerRequest(0, "audio", "model", "auto", None))
     with pytest.raises(WorkerProtocolError, match="audio reference"):
         encode_request(WorkerRequest(1, "bad\x00audio", "model", "auto", None))
+    with pytest.raises(WorkerProtocolError, match="language"):
+        encode_request(WorkerRequest(1, "audio", "model", "tr\x00", None))
     with pytest.raises(WorkerProtocolError, match="lyrics"):
         encode_request(WorkerRequest(1, "audio", "model", "auto", "bad\x00lyrics"))
 
@@ -133,10 +135,33 @@ def test_typed_error_response_is_strict() -> None:
 def test_response_rejects_malformed_encoding_and_json() -> None:
     with pytest.raises(WorkerProtocolError, match="UTF-8"):
         decode_response(b"\xff", expected_request_id=1)
-    with pytest.raises(WorkerProtocolError, match="valid JSON"):
+    with pytest.raises(WorkerProtocolError, match="valid bounded JSON"):
         decode_response(b"{", expected_request_id=1)
     with pytest.raises(WorkerProtocolError, match="root"):
         decode_response(b"[]", expected_request_id=1)
+
+
+def test_response_rejects_ambiguous_or_nonfinite_json() -> None:
+    duplicate = (
+        b'{"payload":{},"protocol":1,"request_id":1,'
+        b'"request_id":1,"type":"analysis"}'
+    )
+    with pytest.raises(WorkerProtocolError, match="duplicate"):
+        decode_response(duplicate, expected_request_id=1)
+
+    nonfinite = (
+        b'{"payload":{"score":NaN},"protocol":1,'
+        b'"request_id":1,"type":"analysis"}'
+    )
+    with pytest.raises(WorkerProtocolError, match="non-finite"):
+        decode_response(nonfinite, expected_request_id=1)
+
+    huge_integer = (
+        b'{"payload":{"value":123456789012345678901},"protocol":1,'
+        b'"request_id":1,"type":"analysis"}'
+    )
+    with pytest.raises(WorkerProtocolError, match="out of bounds"):
+        decode_response(huge_integer, expected_request_id=1)
 
 
 def test_response_size_is_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
