@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import json
 import re
 
-from .worker_payload import (
+from .worker_payload_v1 import (
     WorkerAnalysisPayload,
     WorkerPayloadError,
     validate_worker_analysis_payload,
