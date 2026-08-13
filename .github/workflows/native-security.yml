@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+name: Native worker security
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-x86_64:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake ninja-build
+      - name: Build worker candidate
+        run: |
+          cmake -S native/worker -B "$RUNNER_TEMP/verselatch-worker-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/verselatch-worker-build" --target verselatch-worker --parallel 2
+      - name: Exercise adversarial protocol and paths
+        run: |
+          python3 tests/native_worker_adversarial.py \
+            "$RUNNER_TEMP/verselatch-worker-build/verselatch-worker" \
+            "$RUNNER_TEMP/verselatch-adversarial-fixtures"
