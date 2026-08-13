@@ -45,18 +45,26 @@ add_executable(
     audio_decode.cpp
     worker_protocol.cpp
 )
-
-target_compile_features(verselatch-worker PRIVATE cxx_std_17)
-target_include_directories(
-    verselatch-worker
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${whisper_SOURCE_DIR}/examples
+add_executable(
+    verselatch-audio-smoke
+    audio_smoke.cpp
+    audio_decode.cpp
 )
-target_link_libraries(verselatch-worker PRIVATE whisper yyjson)
 
-if(MSVC)
-    target_compile_options(verselatch-worker PRIVATE /W4 /WX /permissive-)
-else()
-    target_compile_options(verselatch-worker PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
+foreach(target verselatch-worker verselatch-audio-smoke)
+    target_compile_features(${target} PRIVATE cxx_std_17)
+    target_include_directories(
+        ${target}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${whisper_SOURCE_DIR}/examples
+    )
+    target_link_libraries(${target} PRIVATE whisper)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /WX /permissive-)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    endif()
+endforeach()
+
+target_link_libraries(verselatch-worker PRIVATE yyjson)
