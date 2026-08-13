@@ -6,8 +6,18 @@ from .posix_backend import (
     PosixNativeBackendError,
     PosixNativeWorkerBackend,
 )
+from .posix_files import (
+    MAX_AUDIO_BYTES,
+    PosixFileRevision,
+    PosixFileService,
+    PosixModelService,
+)
 
 __all__ = [
+    "MAX_AUDIO_BYTES",
+    "PosixFileRevision",
+    "PosixFileService",
+    "PosixModelService",
     "PosixNativeBackendCancelled",
     "PosixNativeBackendError",
     "PosixNativeWorkerBackend",

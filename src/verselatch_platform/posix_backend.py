@@ -14,6 +14,10 @@ from typing import BinaryIO
 
 from verselatch_app import worker_protocol
 from verselatch_app.backend import AnalysisEvidence, EvidenceBackend, EvidenceJob, EvidenceRequest
+from verselatch_core.process import native_tool_env
+from verselatch_core.storage import file_state_tuple, open_regular_readonly
+
+from .posix_files import MAX_AUDIO_BYTES, PosixFileRevision
 
 
 MAX_STDERR_BYTES = 1024 * 1024
@@ -21,6 +25,7 @@ READ_CHUNK_BYTES = 64 * 1024
 CANCEL_GRACE_SECONDS = 0.50
 PIPE_DRAIN_GRACE_SECONDS = 0.25
 PIPE_JOIN_SECONDS = 1.0
+SYSTEM_EXEC_PATH = "/usr/bin:/bin"
 _ALLOWED_WORKER_NAMES = frozenset({"verselatch-worker"})
 
 
@@ -329,6 +334,70 @@ class _PosixNativeWorkerJob(EvidenceJob):
         )
 
 
+def _fd_reference(descriptor: int) -> str:
+    for root in (Path("/dev/fd"), Path("/proc/self/fd")):
+        if root.is_dir():
+            return str(root / str(descriptor))
+    raise PosixNativeBackendError(
+        "this POSIX platform does not expose inherited file descriptors by path"
+    )
+
+
+def _open_verified_audio(source) -> int:
+    revision = source.revision
+    if not isinstance(revision, PosixFileRevision) or revision.kind != "audio":
+        raise PosixNativeBackendError(
+            "native worker requires a POSIX-verified audio source identity"
+        )
+
+    path = Path(source.location)
+    if not path.is_absolute():
+        raise PosixNativeBackendError("native audio source path must be absolute")
+
+    descriptor = -1
+    try:
+        descriptor, metadata = open_regular_readonly(
+            path,
+            description="Audio source",
+            maximum_bytes=MAX_AUDIO_BYTES,
+        )
+        if file_state_tuple(metadata) != revision.state:
+            raise PosixNativeBackendError(
+                "audio source changed before the native worker was started"
+            )
+        return descriptor
+    except Exception:
+        if descriptor >= 0:
+            os.close(descriptor)
+        raise
+
+
+def _revalidate_model_source(request: EvidenceRequest) -> None:
+    revision = request.model.source.revision
+    if not isinstance(revision, PosixFileRevision) or revision.kind != "model":
+        raise PosixNativeBackendError(
+            "native worker requires a POSIX-verified model source identity"
+        )
+
+    path = Path(request.model.source.location)
+    if not path.is_absolute():
+        raise PosixNativeBackendError("native model source path must be absolute")
+
+    descriptor = -1
+    try:
+        descriptor, metadata = open_regular_readonly(
+            path,
+            description="ASR model",
+        )
+        if file_state_tuple(metadata) != revision.state:
+            raise PosixNativeBackendError(
+                "ASR model changed after verification"
+            )
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
 class PosixNativeWorkerBackend(EvidenceBackend):
     """Launch one fixed-name VerseLatch POSIX worker in an owned process group."""
 
@@ -360,30 +429,38 @@ class PosixNativeWorkerBackend(EvidenceBackend):
 
     def start(self, request: EvidenceRequest) -> EvidenceJob:
         request_id = self._allocate_request_id()
-        encoded = worker_protocol.encode_request(
-            worker_protocol.WorkerRequest(
-                request_id=request_id,
-                audio_ref=request.audio.location,
-                model_ref=request.model.source.location,
-                language=request.language,
-                lyrics=None,
-            )
-        )
+        _revalidate_model_source(request)
 
+        audio_descriptor = _open_verified_audio(request.audio)
         try:
-            process = subprocess.Popen(  # nosec B603 - fixed executable, no shell
-                [str(self._worker_path)],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=False,
-                close_fds=True,
-                start_new_session=True,
+            encoded = worker_protocol.encode_request(
+                worker_protocol.WorkerRequest(
+                    request_id=request_id,
+                    audio_ref=_fd_reference(audio_descriptor),
+                    model_ref=request.model.source.location,
+                    language=request.language,
+                    lyrics=None,
+                )
             )
-        except OSError as exc:
-            raise PosixNativeBackendError(
-                "could not start the package-owned native worker"
-            ) from exc
+
+            try:
+                process = subprocess.Popen(  # nosec B603
+                    [str(self._worker_path)],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    shell=False,
+                    close_fds=True,
+                    pass_fds=(audio_descriptor,),
+                    start_new_session=True,
+                    env=native_tool_env(system_path=SYSTEM_EXEC_PATH),
+                )
+            except OSError as exc:
+                raise PosixNativeBackendError(
+                    "could not start the package-owned native worker"
+                ) from exc
+        finally:
+            os.close(audio_descriptor)
 
         return _PosixNativeWorkerJob(
             process=process,
