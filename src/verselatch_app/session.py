@@ -160,6 +160,16 @@ class WorkflowState:
         return True
 
     @property
+    def analysis_state(self) -> str:
+        if self.closing:
+            return "closing"
+        if self.active_run_id is not None:
+            return "cancelling" if self.cancel_requested else "running"
+        if self.result is not None:
+            return "completed"
+        return "idle"
+
+    @property
     def save_eligible(self) -> bool:
         return (
             not self.closing
