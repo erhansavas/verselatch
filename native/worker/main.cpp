@@ -3,22 +3,14 @@
 
 #include "asr.h"
 #include "audio_decode.h"
+#include "path_safety.h"
 #include "worker_protocol.h"
 
 #include <exception>
-#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace {
-bool regular_absolute_file(const std::string & value) {
-    std::error_code error;
-    const std::filesystem::path path(value);
-    return path.is_absolute()
-        && std::filesystem::is_regular_file(path, error)
-        && !error;
-}
-
 const char * asr_error_code(AsrFailure failure) {
     return failure == AsrFailure::invalid_model ? "INVALID_MODEL" : "ASR_FAILED";
 }
@@ -33,19 +25,19 @@ int main() {
     }
 
     try {
-        if (!regular_absolute_file(request.audio_ref)) {
+        if (!verselatch_safe_regular_path(request.audio_ref)) {
             worker_write_error(
                 request.request_id,
                 "INVALID_REQUEST",
-                "audio reference must name an existing absolute regular file"
+                "audio reference must name an existing absolute non-symlink regular file"
             );
             return 2;
         }
-        if (!regular_absolute_file(request.model_ref)) {
+        if (!verselatch_safe_regular_path(request.model_ref)) {
             worker_write_error(
                 request.request_id,
                 "INVALID_MODEL",
-                "verified model reference is not an existing absolute regular file"
+                "verified model reference must name an existing absolute non-symlink regular file"
             );
             return 3;
         }
