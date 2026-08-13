@@ -7,8 +7,9 @@
 
 #include <cstddef>
 #include <limits>
+#include <utility>
 
-bool verselatch_run_asr(
+AsrFailure verselatch_run_asr(
     const WorkerRequest & request,
     const std::vector<float> & pcm,
     std::vector<WorkerSegment> & segments,
@@ -18,7 +19,7 @@ bool verselatch_run_asr(
     error.clear();
     if (pcm.empty() || pcm.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
         error = "decoded PCM input is invalid";
-        return false;
+        return AsrFailure::invalid_evidence;
     }
 
     whisper_context_params context_params = whisper_context_default_params();
@@ -29,7 +30,7 @@ bool verselatch_run_asr(
     );
     if (context == nullptr) {
         error = "verified model could not be loaded by whisper";
-        return false;
+        return AsrFailure::invalid_model;
     }
 
     whisper_full_params params = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
@@ -51,14 +52,14 @@ bool verselatch_run_asr(
     if (status != 0) {
         whisper_free(context);
         error = "whisper inference failed";
-        return false;
+        return AsrFailure::inference_failed;
     }
 
     const int count = whisper_full_n_segments(context);
     if (count < 0 || count > 600) {
         whisper_free(context);
         error = "whisper produced an invalid segment count";
-        return false;
+        return AsrFailure::invalid_evidence;
     }
 
     double previous_start = -1.0;
@@ -70,7 +71,7 @@ bool verselatch_run_asr(
             whisper_free(context);
             error = "whisper produced invalid segment evidence";
             segments.clear();
-            return false;
+            return AsrFailure::invalid_evidence;
         }
         const double start = static_cast<double>(t0) / 100.0;
         const double end = static_cast<double>(t1) / 100.0;
@@ -78,7 +79,7 @@ bool verselatch_run_asr(
             whisper_free(context);
             error = "whisper produced non-monotonic segment timing";
             segments.clear();
-            return false;
+            return AsrFailure::invalid_evidence;
         }
         std::string text(raw_text);
         if (text.empty()) {
@@ -88,12 +89,12 @@ bool verselatch_run_asr(
             whisper_free(context);
             error = "whisper segment text exceeds the safety limit";
             segments.clear();
-            return false;
+            return AsrFailure::invalid_evidence;
         }
         segments.push_back(WorkerSegment{start, end, std::move(text)});
         previous_start = start;
     }
 
     whisper_free(context);
-    return true;
+    return AsrFailure::none;
 }
