@@ -39,19 +39,14 @@ def parse_manifest() -> dict[str, str]:
 def test_source_manifest_matches_release_tree() -> None:
     manifest = parse_manifest()
     actual = release_files()
-    missing = sorted(set(manifest) - set(actual))
-    unlisted = sorted(set(actual) - set(manifest))
-    mismatched: dict[str, tuple[str, str]] = {}
+    problems: list[str] = []
+    for name in sorted(set(manifest) - set(actual)):
+        problems.append(f"missing: {name}")
+    for name in sorted(set(actual) - set(manifest)):
+        digest = hashlib.sha256(actual[name].read_bytes()).hexdigest()
+        problems.append(f"unlisted: {digest}  {name}")
     for name in sorted(set(manifest) & set(actual)):
         digest = hashlib.sha256(actual[name].read_bytes()).hexdigest()
         if digest != manifest[name]:
-            mismatched[name] = (manifest[name], digest)
-    diagnostic = {
-        "missing": missing,
-        "unlisted": {
-            name: hashlib.sha256(actual[name].read_bytes()).hexdigest()
-            for name in unlisted
-        },
-        "mismatched": mismatched,
-    }
-    assert not missing and not unlisted and not mismatched, diagnostic
+            problems.append(f"mismatch: {digest}  {name}")
+    assert not problems, "\n" + "\n".join(problems)
