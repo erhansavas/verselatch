@@ -18,6 +18,10 @@ bool regular_absolute_file(const std::string & value) {
         && std::filesystem::is_regular_file(path, error)
         && !error;
 }
+
+const char * asr_error_code(AsrFailure failure) {
+    return failure == AsrFailure::invalid_model ? "INVALID_MODEL" : "ASR_FAILED";
+}
 }
 
 int main() {
@@ -53,11 +57,9 @@ int main() {
         }
 
         std::vector<WorkerSegment> segments;
-        if (!verselatch_run_asr(request, pcm, segments, error)) {
-            const char * code = error.find("model") != std::string::npos
-                ? "INVALID_MODEL"
-                : "ASR_FAILED";
-            worker_write_error(request.request_id, code, error);
+        const AsrFailure asr_failure = verselatch_run_asr(request, pcm, segments, error);
+        if (asr_failure != AsrFailure::none) {
+            worker_write_error(request.request_id, asr_error_code(asr_failure), error);
             return 5;
         }
 
