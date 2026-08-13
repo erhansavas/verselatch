@@ -40,7 +40,9 @@ FetchContent_MakeAvailable(whisper yyjson)
 add_executable(
     verselatch-worker
     main.cpp
+    asr.cpp
     audio_decode.cpp
+    worker_protocol.cpp
 )
 
 target_compile_features(verselatch-worker PRIVATE cxx_std_17)
