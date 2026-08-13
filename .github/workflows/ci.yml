@@ -42,7 +42,7 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/verselatch-release-tree"
           desktop-file-validate data/io.github.erhansavas.verselatch.desktop
-          ./tools/validate_appstream.sh --public
+          AS_VALIDATE_NONET=1 ./tools/validate_appstream.sh --public
           shellcheck packaging/linux/*.sh tools/*.sh
           reuse lint
           ruff check --no-cache src tests tools
