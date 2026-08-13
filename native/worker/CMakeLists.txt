@@ -43,6 +43,7 @@ add_executable(
     main.cpp
     asr.cpp
     audio_decode.cpp
+    path_safety.cpp
     worker_protocol.cpp
 )
 add_executable(
