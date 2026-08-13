@@ -38,7 +38,7 @@ include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["verselatch_core*"]
+include = ["verselatch_core*", "verselatch_app*"]
 namespaces = false
 
 [dependency-groups]
