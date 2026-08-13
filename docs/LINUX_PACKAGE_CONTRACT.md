@@ -64,6 +64,26 @@ A valid historical 1.0.1 ownership manifest remains an upgrade input; it is not
 rewritten in place or treated as a 1.1 manifest. Models, cache, logs, config, and
 user-created LRC files remain outside the managed application tree.
 
+## Maintainer worker bundle
+
+Before installer/package migration, the maintainer-side native build is staged as
+an intermediate architecture-specific worker bundle outside the Git source tree.
+The bundle has exactly these regular-file members:
+
+- `app/bin/verselatch-worker`
+- `metadata/worker-provenance.json`
+- `SHA256SUMS`
+
+The provenance record binds the worker byte size and SHA-256 to the canonical
+Linux architecture, the source-tree `SHA256SUMS` identity, the exact source
+commit supplied by the build environment, and the pinned whisper.cpp and yyjson
+commits. The staging verifier rejects symlinks, unexpected inventory, manifest
+or provenance mismatch, architecture mismatch, and worker tampering.
+
+This intermediate worker bundle is maintainer evidence/staging input, not a
+standalone end-user application package and not a reason to commit a prebuilt
+worker binary to the source tree.
+
 ## Release rule
 
 A source archive is not by itself an end-user Linux binary package. Any release

@@ -64,6 +64,16 @@ jobs:
           }, data
           print("Native worker protocol smoke: PASS")
           PY
+          bundle="$RUNNER_TEMP/verselatch-worker-bundle"
+          test ! -e "$bundle"
+          python3 tools/stage_linux_worker_bundle.py stage \
+            --worker "$worker" \
+            --output "$bundle" \
+            --arch "$(uname -m)" \
+            --source-commit "$GITHUB_SHA"
+          python3 tools/stage_linux_worker_bundle.py verify \
+            --bundle "$bundle" \
+            --source-commit "$GITHUB_SHA"
       - name: Portable external static gates
         run: |
           cd "$RUNNER_TEMP/verselatch-release-tree"
