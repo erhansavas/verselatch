@@ -12,6 +12,7 @@ from .posix_files import (
     PosixFileService,
     PosixModelService,
 )
+from .posix_runtime import PosixRuntime, create_posix_runtime
 
 __all__ = [
     "MAX_AUDIO_BYTES",
@@ -21,4 +22,6 @@ __all__ = [
     "PosixNativeBackendCancelled",
     "PosixNativeBackendError",
     "PosixNativeWorkerBackend",
+    "PosixRuntime",
+    "create_posix_runtime",
 ]
