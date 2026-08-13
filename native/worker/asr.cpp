@@ -3,6 +3,7 @@
 
 #include "asr.h"
 
+#include "model_loader.h"
 #include "whisper.h"
 
 #include <cstddef>
@@ -23,12 +24,12 @@ bool verselatch_run_asr(
 
     whisper_context_params context_params = whisper_context_default_params();
     context_params.use_gpu = false;
-    whisper_context * context = whisper_init_from_file_with_params(
-        request.model_ref.c_str(),
-        context_params
+    whisper_context * context = verselatch_load_verified_model(
+        request.model_ref,
+        context_params,
+        error
     );
     if (context == nullptr) {
-        error = "verified model could not be loaded by whisper";
         return false;
     }
 

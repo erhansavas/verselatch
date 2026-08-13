@@ -70,3 +70,19 @@ def test_worker_remains_evidence_only() -> None:
     protocol = (WORKER / "worker_protocol.cpp").read_text(encoding="utf-8")
     assert '"rhythm"' in protocol
     assert '"segments"' in protocol
+
+
+def test_native_model_identity_matches_linux_installer() -> None:
+    loader = (WORKER / "model_loader.cpp").read_text(encoding="utf-8")
+    installer = (ROOT / "packaging" / "linux" / "install-model.sh").read_text(encoding="utf-8")
+    expected = (
+        "ggml-large-v3-turbo.bin",
+        "1624555275",
+        "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69",
+    )
+    for value in expected:
+        assert value in loader
+        assert value in installer
+    assert "whisper_init_with_params(&loader, params)" in loader
+    main = (WORKER / "main.cpp").read_text(encoding="utf-8")
+    assert "verselatch_model_integrity_self_test()" in main

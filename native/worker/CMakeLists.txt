@@ -43,6 +43,7 @@ add_executable(
     main.cpp
     asr.cpp
     audio_decode.cpp
+    model_loader.cpp
     worker_protocol.cpp
 )
 

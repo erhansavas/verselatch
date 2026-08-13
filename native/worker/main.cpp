@@ -3,6 +3,7 @@
 
 #include "asr.h"
 #include "audio_decode.h"
+#include "model_loader.h"
 #include "worker_protocol.h"
 
 #include <exception>
@@ -21,6 +22,11 @@ bool regular_absolute_file(const std::string & value) {
 }
 
 int main() {
+    if (!verselatch_model_integrity_self_test()) {
+        worker_write_error(0U, "INTERNAL_ERROR", "native integrity self-test failed");
+        return 6;
+    }
+
     WorkerRequest request;
     std::string error;
     if (!worker_read_request(request, error)) {
@@ -41,7 +47,7 @@ int main() {
             worker_write_error(
                 request.request_id,
                 "INVALID_MODEL",
-                "verified model reference is not an existing absolute regular file"
+                "model reference is not an existing absolute regular file"
             );
             return 3;
         }
