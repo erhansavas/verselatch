@@ -8,7 +8,14 @@
 #include <string>
 #include <vector>
 
-bool verselatch_run_asr(
+enum class AsrFailure {
+    none,
+    invalid_model,
+    inference_failed,
+    invalid_evidence,
+};
+
+AsrFailure verselatch_run_asr(
     const WorkerRequest & request,
     const std::vector<float> & pcm,
     std::vector<WorkerSegment> & segments,
