@@ -3,7 +3,7 @@
 
 import pytest
 
-from verselatch_core.session import AnalysisResult, SourceIdentity, WorkflowState
+from verselatch_app.session import AnalysisResult, SourceIdentity, WorkflowState
 
 
 def source(name: str, revision: int) -> SourceIdentity:
@@ -67,6 +67,20 @@ def test_stale_completion_cannot_replace_newer_run() -> None:
 
     assert state.finish_analysis(new_run, result(audio)) is True
     assert state.preview == "[00:01.00]line\n"
+
+
+def test_cancel_request_wins_completion_race() -> None:
+    state = WorkflowState()
+    audio = source("song.flac", 1)
+    state.set_sources(audio=audio, lyrics=None)
+    run_id = state.begin_analysis()
+
+    state.request_cancel()
+
+    assert state.finish_analysis(run_id, result(audio)) is False
+    assert state.active_run_id is None
+    assert state.result is None
+    assert state.save_eligible is False
 
 
 def test_review_is_explicit_and_editing_revokes_confirmation() -> None:
