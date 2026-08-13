@@ -42,6 +42,7 @@ class WorkflowState:
         self.review_confirmed = False
         self.preview = ""
         self.cancel_requested = False
+        self.closing = False
 
     def set_sources(
         self,
@@ -65,6 +66,8 @@ class WorkflowState:
         self.cancel_requested = self.active_run_id is not None
 
     def begin_analysis(self) -> int:
+        if self.closing:
+            raise RuntimeError("workflow is closing")
         if self.audio is None:
             raise ValueError("audio source is required")
         if self.active_run_id is not None:
@@ -80,6 +83,14 @@ class WorkflowState:
     def request_cancel(self) -> None:
         if self.active_run_id is not None:
             self.cancel_requested = True
+
+    def begin_close(self) -> None:
+        """Invalidate user-visible state and cancel any owned active analysis."""
+        if self.closing:
+            return
+        self.closing = True
+        self._invalidate_result()
+        self.cancel_requested = self.active_run_id is not None
 
     def finish_cancelled(self, run_id: int) -> bool:
         if run_id != self.active_run_id:
@@ -102,7 +113,7 @@ class WorkflowState:
         if run_id != self.active_run_id:
             return False
 
-        cancelled = self.cancel_requested
+        cancelled = self.cancel_requested or self.closing
         self.active_run_id = None
         self.cancel_requested = False
 
@@ -151,7 +162,8 @@ class WorkflowState:
     @property
     def save_eligible(self) -> bool:
         return (
-            self.result is not None
+            not self.closing
+            and self.result is not None
             and self.result.save_allowed_after_review
             and bool(self.preview.strip())
             and self.review_confirmed
