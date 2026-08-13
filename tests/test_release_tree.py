@@ -4,6 +4,11 @@ from pathlib import Path
 import ast
 import xml.etree.ElementTree as ET
 
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 APP = SRC / "verselatch.py"
@@ -266,8 +271,6 @@ def test_repository_uses_src_layout_and_sparse_root_docs():
 
 
 def test_pep621_metadata_and_src_package_discovery_are_explicit():
-    import tomllib
-
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert config["build-system"]["build-backend"] == "setuptools.build_meta"
     assert any(value.startswith("setuptools>=77.0.3") for value in config["build-system"]["requires"])

@@ -8,7 +8,12 @@ import hashlib
 from pathlib import Path
 import re
 import stat
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 from defusedxml import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
