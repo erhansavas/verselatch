@@ -1,4 +1,4 @@
-VerseLatch 1.0.0 — Third-Party Notices
+VerseLatch 1.0.1 — Third-Party Notices
 ====================================
 
 VerseLatch source

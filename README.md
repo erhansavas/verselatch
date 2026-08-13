@@ -1,12 +1,12 @@
 <!-- SPDX-FileCopyrightText: 2026 erhansavas -->
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 
-# VerseLatch 1.0.0
+# VerseLatch 1.0.1
 
 VerseLatch is a GTK 4/libadwaita desktop application for creating, verifying,
 editing, and saving synchronized LRC timing against local audio.
 
-<img width="850" alt="VerseLatch 1.0.0" src="https://github.com/user-attachments/assets/afc4ef16-f3de-47fc-8748-4d49017ff348">
+<img width="850" alt="VerseLatch application" src="https://github.com/user-attachments/assets/afc4ef16-f3de-47fc-8748-4d49017ff348">
 
 - **Generate Draft** creates an editable ASR draft when no lyrics file is selected.
 - **Verify & Align** keeps existing lyric text authoritative and uses ASR evidence to
@@ -18,7 +18,7 @@ The interface language is US English. Audio and lyrics can be multilingual.
 
 ## Requirements
 
-VerseLatch 1.0.0 targets a current Arch Linux x86_64 desktop with GTK 4 and
+VerseLatch 1.0.1 targets a current Arch Linux x86_64 desktop with GTK 4 and
 libadwaita.
 
 Install the runtime packages from the official Arch repositories:
@@ -52,8 +52,8 @@ See [System Requirements](docs/SYSTEM_REQUIREMENTS.md) for the complete policy.
 Do not run the installer with `sudo`.
 
 ```bash
-unzip VerseLatch-1.0.0.zip
-cd VerseLatch-1.0.0
+unzip VerseLatch-1.0.1.zip
+cd VerseLatch-1.0.1
 ./packaging/linux/install-user.sh
 ```
 
@@ -99,8 +99,8 @@ Typical workflow:
 7. Choose **Save LRC**.
 
 VerseLatch writes the LRC next to the selected audio. Existing output is backed up
-before atomic replacement. If source files change during analysis, VerseLatch
-refuses to save against stale input.
+before atomic replacement. If an analyzed audio or lyrics source changes during analysis or before Save, VerseLatch
+refuses to save against stale input and requires re-analysis.
 
 ### Long analysis
 

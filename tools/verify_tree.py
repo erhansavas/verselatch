@@ -8,7 +8,12 @@ import hashlib
 from pathlib import Path
 import re
 import stat
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 from defusedxml import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -173,7 +178,7 @@ if not any(item.startswith("setuptools>=77.0.3") for item in requires):
     fail("pyproject build-system must require setuptools>=77.0.3")
 expected_project = {
     "name": "verselatch",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "GPL-3.0-only",
     "requires-python": ">=3.10",
 }
@@ -276,7 +281,7 @@ for path in runtime_python:
 
 source, tree = parse_python(APP)
 for required in (
-    'APP_VERSION = "1.0.0"',
+    'APP_VERSION = "1.0.1"',
     f'APP_ID = "{APP_ID}"',
     MODEL_SHA,
     MODEL_SIZE,
@@ -291,7 +296,7 @@ for required in (
     'label="LRC Preview"',
     "Unverified draft ready",
     "not authoritative lyrics",
-    "safe_write_lrc",
+    "safe_write_reviewed_lrc",
     "AnalysisCancelled",
     "self.analysis_run_id",
     "discarded stale analysis callback",
@@ -400,14 +405,21 @@ for token in (
 if helper.count('add_css_class("suggested-action")') != 2 or source.count('add_css_class("suggested-action")') != 2:
     fail("suggested-action styling must be centralized and mutually exclusive")
 
-owners: list[str] = []
+raw_save_owners: list[str] = []
+reviewed_save_owners: list[str] = []
 for node in ast.walk(tree):
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
         for child in ast.walk(node):
-            if isinstance(child, ast.Call) and isinstance(child.func, ast.Name) and child.func.id == "safe_write_lrc":
-                owners.append(node.name)
-if [name for name in owners if name != "self_test"] != ["save_result"]:
-    fail(f"unexpected safe_write_lrc callers: {owners!r}")
+            if not (isinstance(child, ast.Call) and isinstance(child.func, ast.Name)):
+                continue
+            if child.func.id == "safe_write_lrc":
+                raw_save_owners.append(node.name)
+            elif child.func.id == "safe_write_reviewed_lrc":
+                reviewed_save_owners.append(node.name)
+if any(name != "self_test" for name in raw_save_owners):
+    fail(f"runtime code bypasses analyzed-source save guard: {raw_save_owners!r}")
+if reviewed_save_owners != ["save_result"]:
+    fail(f"unexpected reviewed-save callers: {reviewed_save_owners!r}")
 
 for node in ast.walk(tree):
     if not isinstance(node, ast.Call):
@@ -477,6 +489,7 @@ for token in (
     "<project_license>GPL-3.0-only</project_license>",
     "<summary>Create and align LRC timing</summary>",
     '<developer id="io.github.erhansavas">',
+    '<release version="1.0.1" date="2026-08-13">',
     '<release version="1.0.0" date="2026-08-12">',
     '<url type="homepage">https://github.com/erhansavas/verselatch</url>',
     '<url type="bugtracker">https://github.com/erhansavas/verselatch/issues</url>',
@@ -514,6 +527,9 @@ for required_file in (gpl, mit, license_root, DOCS / "PROVENANCE.md", DOCS / "LI
         fail(f"required license/provenance file missing or unsafe: {required_file.relative_to(ROOT)}")
 if license_root.read_bytes() != gpl.read_bytes():
     fail("root LICENSE must be the canonical GPL-3.0-only text")
+mit_text = mit.read_text(encoding="utf-8")
+if "Copyright (c) 2026 erhansavas" not in mit_text or "<copyright holders>" in mit_text:
+    fail("MIT license text must carry the actual first-party copyright notice")
 if (SPDX_LICENSE_TAG + " MIT") not in "\n".join(meta.splitlines()[:6]):
     fail("AppStream metadata must retain its explicit MIT SPDX header")
 for stale_license in ("GPL-3.0-or-later.txt", "AGPL-3.0-only.txt", "AGPL-3.0-or-later.txt"):
@@ -547,6 +563,9 @@ for token in (
     'CORE_SOURCE="${PROJECT_ROOT}/src/verselatch_core"',
     'UNINSTALL_SOURCE="${SCRIPT_DIR}/uninstall-user.sh"',
     'MODEL_INSTALL_SOURCE="${SCRIPT_DIR}/install-model.sh"',
+    'OWNERSHIP_SOURCE="${SCRIPT_DIR}/install-ownership.sh"',
+    'INSTALL_MANIFEST="${APP_ROOT}/install-manifest.tsv"',
+    "verselatch_preflight_install_ownership",
     "APP_STAGE",
     "EXPECTED_SHA256",
     'hasattr(Gtk.License, "GPL_3_0_ONLY")',

@@ -76,5 +76,5 @@ breaks one invalidates the release candidate.
 30. **The application does not own a parallel color palette.** Follow System is
     the default; Light and Dark delegate palette and semantic states to libadwaita.
 31. **The internal Python wheel is a QA artifact, not the public installation channel.** Public distribution is the GitHub source/application release; release documentation does not instruct users to upload or install the wheel from PyPI.
-32. **US English is the interface source language for 1.0.0.** Multilingual
+32. **US English is the interface source language for 1.0.1.** Multilingual
     audio/lyrics support does not imply an unimplemented UI localization.

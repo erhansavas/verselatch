@@ -29,6 +29,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.0.1" date="2026-08-13">
+      <description>
+        <p>Fixes stale-source save protection, adds fail-closed per-user installation ownership checks, and adds portable repository CI.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-08-12">
       <description>
         <p>Initial release with LRC draft generation, Verify &amp; Align, editable review, and review-before-save safeguards.</p>

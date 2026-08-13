@@ -44,16 +44,16 @@ def test_zip_bytes_remain_identical_when_host_mode_bits_change(tmp_path):
 
     app.chmod(0o600)
     readme.chmod(0o755)
-    release.build_zip(root, a, "VerseLatch-1.0.0", 1_786_500_000)
+    release.build_zip(root, a, "VerseLatch-1.0.1", 1_786_500_000)
 
     app.chmod(0o777)
     readme.chmod(0o600)
-    release.build_zip(root, b, "VerseLatch-1.0.0", 1_786_500_000)
+    release.build_zip(root, b, "VerseLatch-1.0.1", 1_786_500_000)
 
     assert a.read_bytes() == b.read_bytes()
     with zipfile.ZipFile(a) as archive:
-        app_info = archive.getinfo("VerseLatch-1.0.0/src/verselatch.py")
-        readme_info = archive.getinfo("VerseLatch-1.0.0/README.md")
+        app_info = archive.getinfo("VerseLatch-1.0.1/src/verselatch.py")
+        readme_info = archive.getinfo("VerseLatch-1.0.1/README.md")
     assert (app_info.external_attr >> 16) & 0o777 == 0o755
     assert (readme_info.external_attr >> 16) & 0o777 == 0o644
 

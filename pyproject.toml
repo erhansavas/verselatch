@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "verselatch"
-version = "1.0.0"
+version = "1.0.1"
 description = "Desktop application for creating, verifying, editing, and aligning LRC timing."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -111,9 +111,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--out-dir", type=Path, required=True)
-    parser.add_argument("--label", default="VerseLatch-1.0.0")
-    parser.add_argument("--zip-name", default="VerseLatch-1.0.0.zip")
-    parser.add_argument("--tar-name", default="VerseLatch-1.0.0.tar.gz")
+    parser.add_argument("--label", default="VerseLatch-1.0.1")
+    parser.add_argument("--zip-name", default="VerseLatch-1.0.1.zip")
+    parser.add_argument("--tar-name", default="VerseLatch-1.0.1.tar.gz")
     args = parser.parse_args()
     raw_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     if not raw_epoch or not raw_epoch.isdecimal():

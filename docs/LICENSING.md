@@ -4,7 +4,7 @@
 # Licensing
 
 VerseLatch first-party source, scripts, project documentation, and original
-project artwork in the 1.0.0 release source are offered under the **GNU General
+project artwork in the 1.0.1 release source are offered under the **GNU General
 Public License version 3 only** (`GPL-3.0-only`), except where a file carries a
 different explicit SPDX license identifier. The complete, unmodified GPLv3
 text is in `../LICENSES/GPL-3.0-only.txt`. Source/script files carry SPDX
@@ -21,7 +21,7 @@ change the terms already attached to copies distributed earlier under another
 valid grant, and it does not permit VerseLatch to relabel material owned by
 another rightsholder.
 
-VerseLatch 1.0.0 therefore uses `GPL-3.0-only` as the current first-party
+VerseLatch 1.0.1 therefore uses `GPL-3.0-only` as the current first-party
 license while retaining a manual publication gate in `PROVENANCE.md`: a public
 distributor must still establish that the listed rightsholder has the authority
 to license every first-party item under those terms. External contributions,

@@ -3,6 +3,14 @@
 
 # Changelog
 
+## 1.0.1 — 2026-08-13
+
+- Reject saving Verify & Align results when the analyzed lyrics source changed, disappeared, was replaced, or no longer matches the current selection.
+- Add fail-closed ownership manifests for per-user install, reinstall, upgrade, and uninstall paths, including exact recognition of an unmodified 1.0.0 installation.
+- Add minimal portable GitHub Actions checks while retaining Arch/native qualification as a separate release gate.
+- Clarify that launcher stderr rotation occurs between launches rather than imposing a hard bound during one process lifetime.
+- Replace the historical MIT license-text placeholder with the actual first-party copyright notice.
+
 ## 1.0.0 — 2026-08-12
 
 First stable public release.

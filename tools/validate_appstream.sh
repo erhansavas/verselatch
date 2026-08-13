@@ -32,7 +32,7 @@ if [[ "${mode}" == "private" ]]; then
         printf 'Private-RC metadata must not contain an unverified homepage URL.\n' >&2
         exit 1
     fi
-    if ! grep -Fq '<release type="development" version="1.0.0"' "${metadata}"; then
+    if ! grep -Fq '<release type="development" version="1.0.1"' "${metadata}"; then
         printf 'Private-RC metadata must carry an explicit development release.\n' >&2
         exit 1
     fi

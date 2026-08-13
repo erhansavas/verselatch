@@ -4,6 +4,11 @@ from pathlib import Path
 import ast
 import xml.etree.ElementTree as ET
 
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 APP = SRC / "verselatch.py"
@@ -33,6 +38,7 @@ def test_metadata_xml_is_well_formed_and_public_release_safe():
     assert '<developer id="io.github.erhansavas">' in text
     assert '<url type="homepage">https://github.com/erhansavas/verselatch</url>' in text
     assert '<url type="bugtracker">https://github.com/erhansavas/verselatch/issues</url>' in text
+    assert '<release version="1.0.1" date="2026-08-13">' in text
     assert '<release version="1.0.0" date="2026-08-12">' in text
     assert 'type="development"' not in text
 
@@ -49,6 +55,7 @@ def test_license_family_is_consistent():
         "src/verselatch.py",
         "packaging/linux/install-user.sh",
         "packaging/linux/install-model.sh",
+        "packaging/linux/install-ownership.sh",
         "packaging/linux/uninstall-user.sh",
         "tools/verify_tree.py",
         "tools/release.py",
@@ -264,13 +271,11 @@ def test_repository_uses_src_layout_and_sparse_root_docs():
 
 
 def test_pep621_metadata_and_src_package_discovery_are_explicit():
-    import tomllib
-
     config = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert config["build-system"]["build-backend"] == "setuptools.build_meta"
     assert any(value.startswith("setuptools>=77.0.3") for value in config["build-system"]["requires"])
     assert config["project"]["name"] == "verselatch"
-    assert config["project"]["version"] == "1.0.0"
+    assert config["project"]["version"] == "1.0.1"
     assert config["project"]["license"] == "GPL-3.0-only"
     assert "classifiers" not in config["project"]
     assert config["project"]["urls"] == {
@@ -405,3 +410,20 @@ def test_language_and_publication_copy_stays_synchronized_with_behavior():
     assert "without changing release bytes" not in readme
     assert "Public AppStream metadata" in invariants
     assert "strict public AppStream profile" in quality
+
+
+def test_ci_is_minimal_portable_and_pins_action_dependencies():
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "permissions:\n  contents: read" in workflow
+    assert "pull_request_target" not in workflow
+    assert "actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5" in workflow
+    assert "persist-credentials: false" in workflow
+    assert "secrets." not in workflow
+    assert "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" in workflow
+    assert "./tools/quality_gate.sh --portable --public-metadata" in workflow
+    assert "./tools/validate_appstream.sh --public" in workflow
+    assert "shellcheck packaging/linux/*.sh tools/*.sh" in workflow
+    assert "reuse lint" in workflow
+    assert "ruff check --no-cache src tests tools" in workflow
+    assert "bandit -q -r src tools -x tests -ll" in workflow
+    assert "native_release_check.sh" not in workflow

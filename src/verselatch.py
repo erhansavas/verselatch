@@ -46,6 +46,7 @@ from verselatch_core.storage import (
     require_regular_file_state,
     safe_read_text,
     safe_write_lrc,
+    safe_write_reviewed_lrc,
 )
 from verselatch_core.process import (
     UNSAFE_NATIVE_ENV_KEYS,
@@ -260,7 +261,7 @@ except (ImportError, ValueError):
 
 
 APP_NAME = "VerseLatch"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_ID = "io.github.erhansavas.verselatch"
 MIN_GTK_VERSION = (4, 16)
 MIN_ADW_VERSION = (1, 8)
@@ -1201,7 +1202,10 @@ class MainWindow(
         self.output_text = ""
 
         self.output_allowed = False
+        self.analyzed_audio_path: Path | None = None
         self.analyzed_audio_state: tuple[int, int, int, int, int] | None = None
+        self.analyzed_lyrics_path: Path | None = None
+        self.analyzed_lyrics_state: tuple[int, int, int, int, int] | None = None
         self.setting_preview = False
 
         # Save completion belongs to the current explicit source selection.
@@ -2645,7 +2649,10 @@ class MainWindow(
     ):
         self.output_text = ""
         self.output_allowed = False
+        self.analyzed_audio_path = None
         self.analyzed_audio_state = None
+        self.analyzed_lyrics_path = None
+        self.analyzed_lyrics_state = None
         self.analysis_retry_recommended = False
 
         self.results_group.set_visible(
@@ -3429,7 +3436,10 @@ class MainWindow(
                     "report": "\n".join(report_lines),
                     "allowed": allowed,
                     "status": status,
+                    "audio_path": audio,
                     "audio_state": audio_state,
+                    "lyrics_path": None,
+                    "lyrics_state": None,
                 }
 
             else:
@@ -3579,7 +3589,10 @@ class MainWindow(
                     "timing_median_error": alignment["timing_median_error"],
                     "timing_source": timing_source_note,
                     "status": status,
+                    "audio_path": audio,
                     "audio_state": audio_state,
+                    "lyrics_path": lyrics,
+                    "lyrics_state": lyrics_source_state,
                 }
 
             error = None
@@ -3638,7 +3651,10 @@ class MainWindow(
         if cancelled:
             self.output_text = ""
             self.output_allowed = False
+            self.analyzed_audio_path = None
             self.analyzed_audio_state = None
+            self.analyzed_lyrics_path = None
+            self.analyzed_lyrics_state = None
             self.analysis_retry_recommended = False
             self.results_group.set_visible(False)
             self.preview_card.set_visible(False)
@@ -3659,7 +3675,10 @@ class MainWindow(
         if error:
             self.output_text = ""
             self.output_allowed = False
+            self.analyzed_audio_path = None
             self.analyzed_audio_state = None
+            self.analyzed_lyrics_path = None
+            self.analyzed_lyrics_state = None
             self.analysis_retry_recommended = True
             self.set_status("Analysis failed. Try again.")
             self.set_report(error)
@@ -3674,7 +3693,10 @@ class MainWindow(
 
         self.output_text = result["preview"]
         self.output_allowed = bool(result["allowed"])
+        self.analyzed_audio_path = result.get("audio_path")
         self.analyzed_audio_state = result.get("audio_state")
+        self.analyzed_lyrics_path = result.get("lyrics_path")
+        self.analyzed_lyrics_state = result.get("lyrics_state")
         if result.get("kind") == "aligned":
             if result.get("allowed", False):
                 friendly_status = (
@@ -3757,25 +3779,6 @@ class MainWindow(
             self.set_save_error(str(exc))
             return
 
-        if self.analyzed_audio_state is None:
-            self.set_save_error(
-                "No validated analysis source is available. Run analysis again before saving."
-            )
-            return
-
-        try:
-            require_regular_file_state(
-                self.audio_path,
-                self.analyzed_audio_state,
-                description="Audio source",
-                maximum_bytes=MAX_AUDIO_BYTES,
-            )
-        except VerseLatchError:
-            self.set_save_error(
-                "Audio changed after analysis. Run analysis again before saving."
-            )
-            return
-
         self.save_state = "saving"
         self.save_button.set_label("Saving…")
         self.save_button.set_sensitive(False)
@@ -3787,9 +3790,16 @@ class MainWindow(
         self.save_feedback.add_css_class("dimmed")
 
         try:
-            output, backup = safe_write_lrc(
-                self.audio_path,
-                reviewed_text,
+            output, backup = safe_write_reviewed_lrc(
+                content=reviewed_text,
+                current_audio_path=self.audio_path,
+                analyzed_audio_path=self.analyzed_audio_path,
+                analyzed_audio_state=self.analyzed_audio_state,
+                current_lyrics_path=self.lyrics_path,
+                analyzed_lyrics_path=self.analyzed_lyrics_path,
+                analyzed_lyrics_state=self.analyzed_lyrics_state,
+                maximum_audio_bytes=MAX_AUDIO_BYTES,
+                maximum_lyrics_bytes=MAX_LYRICS_BYTES,
             )
             self.output_text = reviewed_text
 

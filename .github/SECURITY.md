@@ -5,7 +5,7 @@
 
 ## Threat model
 
-VerseLatch 1.0.0 is a per-user local desktop application. It does not require root privileges and must not be installed with `sudo`.
+VerseLatch 1.0.1 is a per-user local desktop application. It does not require root privileges and must not be installed with `sudo`.
 
 The main security goals are:
 
@@ -57,28 +57,31 @@ The app is not a multi-user security boundary. Same-UID processes can generally 
 
 ## Output files
 
-Saving is user initiated. Before replacing an existing LRC, VerseLatch verifies the target state, creates a backup, writes a same-directory temporary file, flushes/fsyncs it, rechecks for a lost update, atomically replaces the target, and fsyncs the directory.
+Saving is user initiated. Immediately before the save transaction, VerseLatch revalidates the analyzed audio identity and, for Verify & Align, the analyzed lyrics identity and current source selection. Before replacing an existing LRC, it verifies the target state, creates a backup, writes a same-directory temporary file, flushes/fsyncs it, rechecks for a lost update, atomically replaces the target, and fsyncs the directory.
 
 The app does not automatically write merely because analysis completed.
 
 ## App-owned directories and logs
 
-State/cache directories are created as private per-user directories. The active log handler uses no-follow semantics for the log leaf. Persistent launcher stderr is bounded and rotated.
+State/cache directories are created as private per-user directories. The active log handler uses no-follow semantics for the log leaf. Persistent launcher stderr is rotated between launches when it exceeds the rotation threshold; one arbitrarily long foreground run is not hard-bounded. Native analysis subprocess output is separately size-bounded.
 
 ## Installer transaction
 
 The installer:
 
 1. verifies the complete package inventory, SHA-256 manifest, and exact source hash,
-2. validates packaged shell helpers and host dependencies,
-3. verifies, locally copies, or downloads only the exact pinned model,
-4. runs model/whisper.cpp/aubio preflights,
-5. validates the first-party SVG icon,
+2. fails closed on unknown fixed-path collisions; a manifest-backed 1.0.1 install or an exact unmodified historical 1.0.0 install may be upgraded,
+3. validates packaged shell helpers and host dependencies,
+4. verifies, locally copies, or downloads only the exact pinned model,
+5. runs model/whisper.cpp/aubio preflights,
 6. stages `verselatch.py` and the complete `verselatch_core` package together, then compiles and self-tests that staged payload,
 7. performs a static policy/design audit and native GTK populated/empty smoke test,
-8. swaps the complete modular app directory as one unit, retaining the previous payload as a rollback snapshot,
-9. replaces the launcher, uninstaller, desktop entry, full-color/symbolic icons, and AppStream metadata with per-file rollback backups,
-10. removes the old payload snapshot only after the entire owned-file transaction succeeds.
+8. rechecks ownership immediately before the destructive transaction,
+9. swaps the complete modular app directory as one unit and replaces fixed application paths while retaining rollback snapshots,
+10. commits a digest/version ownership manifest only after those managed files are installed,
+11. removes rollback snapshots only after the complete transaction and desktop/GIO registration succeed.
+
+The uninstaller verifies its ownership helper and manifest before removing managed application files. Modified or foreign managed paths cause a fail-closed refusal. Models, cache, logs, configuration, and user-created LRC files remain outside the destructive uninstall set.
 
 ## Reporting
 
