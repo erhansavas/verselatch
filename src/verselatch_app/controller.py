@@ -125,6 +125,9 @@ class AnalysisController:
                 return None
             return outcome
         except Exception:
+            if self.state.cancel_requested:
+                self.state.finish_cancelled(active.run_id)
+                return None
             self.state.finish_failed(active.run_id)
             raise
         finally:
