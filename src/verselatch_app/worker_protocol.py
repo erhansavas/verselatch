@@ -7,6 +7,12 @@ from dataclasses import dataclass
 import json
 import re
 
+from .worker_payload import (
+    WorkerAnalysisPayload,
+    WorkerPayloadError,
+    validate_worker_analysis_payload,
+)
+
 
 PROTOCOL_VERSION = 1
 MAX_REQUEST_BYTES = 5 * 1024 * 1024
@@ -44,7 +50,7 @@ class WorkerRequest:
 @dataclass(frozen=True)
 class WorkerResponse:
     request_id: int
-    payload: dict[str, object] | None
+    payload: WorkerAnalysisPayload | None
     error_code: str | None
     error_message: str | None
 
@@ -152,9 +158,10 @@ def decode_response(data: bytes, *, expected_request_id: int) -> WorkerResponse:
     if kind == "analysis":
         if set(message) != common | {"payload"}:
             raise WorkerProtocolError("unexpected analysis response fields")
-        payload = message.get("payload")
-        if not isinstance(payload, dict):
-            raise WorkerProtocolError("analysis payload must be an object")
+        try:
+            payload = validate_worker_analysis_payload(message.get("payload"))
+        except WorkerPayloadError as exc:
+            raise WorkerProtocolError(str(exc)) from exc
         return WorkerResponse(
             request_id=request_id,
             payload=payload,
