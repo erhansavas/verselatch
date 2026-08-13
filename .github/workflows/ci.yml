@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.10'
+      - name: Install portable QA tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes appstream desktop-file-utils shellcheck
+          python -m pip install --disable-pip-version-check \
+            'setuptools>=77.0.3' 'pytest>=8.4' 'ruff>=0.12' \
+            'bandit>=1.9' 'reuse>=3.3,<4' 'defusedxml>=0.7.1' 'build>=1.2'
+      - name: Portable build and regression gate
+        run: ./tools/quality_gate.sh --portable --public-metadata
+      - name: Portable external static gates
+        run: |
+          desktop-file-validate data/io.github.erhansavas.verselatch.desktop
+          ./tools/validate_appstream.sh --public
+          shellcheck packaging/linux/*.sh tools/*.sh
+          reuse lint
+          ruff check --no-cache src tests tools
+          bandit -q -r src tools -x tests -ll

@@ -131,3 +131,170 @@ def test_public_storage_state_api_detects_replacement(tmp_path: Path):
     replacement.replace(source)
     with pytest.raises(VerseLatchError, match="changed after it was selected"):
         require_regular_file_state(source, state, description="Selected", maximum_bytes=1024)
+
+
+def _analysis_source_fixture(tmp_path: Path):
+    from verselatch_core.storage import regular_file_state
+
+    audio = tmp_path / "song.flac"
+    lyrics = tmp_path / "song-source.lrc"
+    audio.write_bytes(b"audio")
+    lyrics.write_text("[00:01.00]line\n", encoding="utf-8")
+    return (
+        audio,
+        regular_file_state(audio, description="Audio source", maximum_bytes=1024),
+        lyrics,
+        regular_file_state(lyrics, description="Lyrics source", maximum_bytes=1024),
+    )
+
+
+def _require_analysis_sources(*, audio, audio_state, lyrics, lyrics_state, current_lyrics=None):
+    from verselatch_core.storage import require_analysis_source_states
+
+    require_analysis_source_states(
+        current_audio_path=audio,
+        analyzed_audio_path=audio,
+        analyzed_audio_state=audio_state,
+        current_lyrics_path=lyrics if current_lyrics is None else current_lyrics,
+        analyzed_lyrics_path=lyrics,
+        analyzed_lyrics_state=lyrics_state,
+        maximum_audio_bytes=1024,
+        maximum_lyrics_bytes=1024,
+    )
+
+
+def test_analysis_source_guard_allows_unchanged_lyrics(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    _require_analysis_sources(
+        audio=audio,
+        audio_state=audio_state,
+        lyrics=lyrics,
+        lyrics_state=lyrics_state,
+    )
+
+
+def test_analysis_source_guard_rejects_lyrics_changed_after_analysis(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    lyrics.write_text("[00:02.00]external edit after analysis\n", encoding="utf-8")
+    with pytest.raises(VerseLatchError, match="Lyrics changed or became unsafe after analysis"):
+        _require_analysis_sources(
+            audio=audio,
+            audio_state=audio_state,
+            lyrics=lyrics,
+            lyrics_state=lyrics_state,
+        )
+
+
+def test_analysis_source_guard_rejects_lyrics_inode_replacement(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    replacement = tmp_path / "replacement.lrc"
+    replacement.write_text("[00:01.00]line\n", encoding="utf-8")
+    replacement.replace(lyrics)
+    with pytest.raises(VerseLatchError, match="Lyrics changed or became unsafe after analysis"):
+        _require_analysis_sources(
+            audio=audio,
+            audio_state=audio_state,
+            lyrics=lyrics,
+            lyrics_state=lyrics_state,
+        )
+
+
+def test_analysis_source_guard_rejects_removed_lyrics(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    lyrics.unlink()
+    with pytest.raises(VerseLatchError, match="Lyrics changed or became unsafe after analysis"):
+        _require_analysis_sources(
+            audio=audio,
+            audio_state=audio_state,
+            lyrics=lyrics,
+            lyrics_state=lyrics_state,
+        )
+
+
+def test_analysis_source_guard_still_rejects_stale_audio(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    audio.write_bytes(b"changed audio")
+    with pytest.raises(VerseLatchError, match="Audio changed or became unsafe after analysis"):
+        _require_analysis_sources(
+            audio=audio,
+            audio_state=audio_state,
+            lyrics=lyrics,
+            lyrics_state=lyrics_state,
+        )
+
+
+def test_analysis_source_guard_allows_generate_draft_without_lyrics(tmp_path: Path):
+    from verselatch_core.storage import regular_file_state, require_analysis_source_states
+
+    audio = tmp_path / "song.flac"
+    audio.write_bytes(b"audio")
+    state = regular_file_state(audio, description="Audio source", maximum_bytes=1024)
+    require_analysis_source_states(
+        current_audio_path=audio,
+        analyzed_audio_path=audio,
+        analyzed_audio_state=state,
+        current_lyrics_path=None,
+        analyzed_lyrics_path=None,
+        analyzed_lyrics_state=None,
+        maximum_audio_bytes=1024,
+        maximum_lyrics_bytes=1024,
+    )
+
+
+def test_analysis_source_guard_rejects_selection_path_mixup(tmp_path: Path):
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    other = tmp_path / "other.lrc"
+    other.write_text("[00:01.00]line\n", encoding="utf-8")
+    with pytest.raises(VerseLatchError, match="Lyrics selection changed after analysis"):
+        _require_analysis_sources(
+            audio=audio,
+            audio_state=audio_state,
+            lyrics=lyrics,
+            lyrics_state=lyrics_state,
+            current_lyrics=other,
+        )
+
+
+def test_reviewed_save_rejects_stale_lyrics_before_touching_output(tmp_path: Path):
+    from verselatch_core.storage import safe_write_reviewed_lrc
+
+    audio, audio_state, lyrics, lyrics_state = _analysis_source_fixture(tmp_path)
+    output = audio.with_suffix(".lrc")
+    output.write_text("existing output\n", encoding="utf-8")
+    lyrics.write_text("[00:03.00]changed after analysis\n", encoding="utf-8")
+
+    with pytest.raises(VerseLatchError, match="Lyrics changed or became unsafe after analysis"):
+        safe_write_reviewed_lrc(
+            content="[00:01.00]stale preview",
+            current_audio_path=audio,
+            analyzed_audio_path=audio,
+            analyzed_audio_state=audio_state,
+            current_lyrics_path=lyrics,
+            analyzed_lyrics_path=lyrics,
+            analyzed_lyrics_state=lyrics_state,
+            maximum_audio_bytes=1024,
+            maximum_lyrics_bytes=1024,
+        )
+    assert output.read_text(encoding="utf-8") == "existing output\n"
+    assert not list(tmp_path.glob("song.lrc.bak-*"))
+
+
+def test_reviewed_save_generate_draft_without_lyrics_writes_normally(tmp_path: Path):
+    from verselatch_core.storage import regular_file_state, safe_write_reviewed_lrc
+
+    audio = tmp_path / "draft.flac"
+    audio.write_bytes(b"audio")
+    state = regular_file_state(audio, description="Audio source", maximum_bytes=1024)
+    output, backup = safe_write_reviewed_lrc(
+        content="[00:01.00]draft line",
+        current_audio_path=audio,
+        analyzed_audio_path=audio,
+        analyzed_audio_state=state,
+        current_lyrics_path=None,
+        analyzed_lyrics_path=None,
+        analyzed_lyrics_state=None,
+        maximum_audio_bytes=1024,
+        maximum_lyrics_bytes=1024,
+    )
+    assert backup is None
+    assert output.read_text(encoding="utf-8") == "[00:01.00]draft line\n"

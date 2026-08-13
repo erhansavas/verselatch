@@ -64,12 +64,14 @@ DESKTOP="${DATA_HOME}/applications/io.github.erhansavas.verselatch.desktop"
 ICON="${DATA_HOME}/icons/hicolor/scalable/apps/io.github.erhansavas.verselatch.svg"
 SYMBOLIC_ICON="${DATA_HOME}/icons/hicolor/symbolic/apps/io.github.erhansavas.verselatch-symbolic.svg"
 METAINFO="${DATA_HOME}/metainfo/io.github.erhansavas.verselatch.metainfo.xml"
+OWNERSHIP_LIB="${APP_ROOT}/install-ownership.sh"
+INSTALL_MANIFEST="${APP_ROOT}/install-manifest.tsv"
 ASR_MODEL="${DATA_HOME}/verselatch/models/ggml-large-v3-turbo.bin"
 LEGACY_ASR_MODEL="${DATA_HOME}/lyricfix/models/ggml-large-v3-turbo.bin"
 ASR_MODEL_SHA256="1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
 ASR_MODEL_SIZE="1624555275"
 ASR_MODEL_URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/98aa99a0a9db05ae2342309f5096248665f7cba3/ggml-large-v3-turbo.bin"
-EXPECTED_SHA256="c96ee60d527f8e3100f786efc1d5ad763930d3d97669c57e49831b6e0740e411"
+EXPECTED_SHA256="1631ad141489279030dbbf16beb96042cef9360565b7b7b8634ffaa28ace9671"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
@@ -80,6 +82,7 @@ MODEL_INSTALL_SOURCE="${SCRIPT_DIR}/install-model.sh"
 ICON_SOURCE="${PROJECT_ROOT}/data/io.github.erhansavas.verselatch.svg"
 SYMBOLIC_ICON_SOURCE="${PROJECT_ROOT}/data/io.github.erhansavas.verselatch-symbolic.svg"
 METAINFO_SOURCE="${PROJECT_ROOT}/data/io.github.erhansavas.verselatch.metainfo.xml"
+OWNERSHIP_SOURCE="${SCRIPT_DIR}/install-ownership.sh"
 LICENSE_FILE="${PROJECT_ROOT}/LICENSE"
 MANIFEST_FILE="${PROJECT_ROOT}/SHA256SUMS"
 
@@ -119,6 +122,16 @@ METAINFO_BACKUP_DIR=""
 METAINFO_HAD=0
 METAINFO_REPLACED=0
 
+OWNERSHIP_STAGE=""
+OWNERSHIP_BACKUP_DIR=""
+OWNERSHIP_HAD=0
+OWNERSHIP_REPLACED=0
+
+MANIFEST_STAGE=""
+MANIFEST_BACKUP_DIR=""
+MANIFEST_HAD=0
+MANIFEST_REPLACED=0
+
 ASR_MODEL_STAGE=""
 RHYTHM_SMOKE_DIR=""
 
@@ -135,8 +148,22 @@ cleanup() {
     [[ -z "${ICON_STAGE}" || ! -e "${ICON_STAGE}" ]] || rm -f -- "${ICON_STAGE}"
     [[ -z "${SYMBOLIC_ICON_STAGE}" || ! -e "${SYMBOLIC_ICON_STAGE}" ]] || rm -f -- "${SYMBOLIC_ICON_STAGE}"
     [[ -z "${METAINFO_STAGE}" || ! -e "${METAINFO_STAGE}" ]] || rm -f -- "${METAINFO_STAGE}"
+    [[ -z "${OWNERSHIP_STAGE}" || ! -e "${OWNERSHIP_STAGE}" ]] || rm -f -- "${OWNERSHIP_STAGE}"
+    [[ -z "${MANIFEST_STAGE}" || ! -e "${MANIFEST_STAGE}" ]] || rm -f -- "${MANIFEST_STAGE}"
 
     if (( status != 0 )); then
+        if (( MANIFEST_REPLACED == 1 )); then
+            rm -f -- "${INSTALL_MANIFEST}"
+            if (( MANIFEST_HAD == 1 )); then
+                cp -a --no-dereference -- "${MANIFEST_BACKUP_DIR}/original" "${INSTALL_MANIFEST}"
+            fi
+        fi
+        if (( OWNERSHIP_REPLACED == 1 )); then
+            rm -f -- "${OWNERSHIP_LIB}"
+            if (( OWNERSHIP_HAD == 1 )); then
+                cp -a --no-dereference -- "${OWNERSHIP_BACKUP_DIR}/original" "${OWNERSHIP_LIB}"
+            fi
+        fi
         if (( METAINFO_REPLACED == 1 )); then
             rm -f -- "${METAINFO}"
             if (( METAINFO_HAD == 1 )); then
@@ -199,6 +226,8 @@ cleanup() {
     [[ -z "${ICON_BACKUP_DIR}" || ! -d "${ICON_BACKUP_DIR}" ]] || rm -rf -- "${ICON_BACKUP_DIR}"
     [[ -z "${SYMBOLIC_ICON_BACKUP_DIR}" || ! -d "${SYMBOLIC_ICON_BACKUP_DIR}" ]] || rm -rf -- "${SYMBOLIC_ICON_BACKUP_DIR}"
     [[ -z "${METAINFO_BACKUP_DIR}" || ! -d "${METAINFO_BACKUP_DIR}" ]] || rm -rf -- "${METAINFO_BACKUP_DIR}"
+    [[ -z "${OWNERSHIP_BACKUP_DIR}" || ! -d "${OWNERSHIP_BACKUP_DIR}" ]] || rm -rf -- "${OWNERSHIP_BACKUP_DIR}"
+    [[ -z "${MANIFEST_BACKUP_DIR}" || ! -d "${MANIFEST_BACKUP_DIR}" ]] || rm -rf -- "${MANIFEST_BACKUP_DIR}"
     [[ -z "${APP_BACKUP}" || ! -d "${APP_BACKUP}" ]] || rm -rf --one-file-system -- "${APP_BACKUP}"
 
     exit "${status}"
@@ -219,6 +248,7 @@ required_files=(
     "${ICON_SOURCE}"
     "${SYMBOLIC_ICON_SOURCE}"
     "${METAINFO_SOURCE}"
+    "${OWNERSHIP_SOURCE}"
     "${LICENSE_FILE}"
     "${MANIFEST_FILE}"
     "${CORE_SOURCE}/__init__.py"
@@ -270,11 +300,19 @@ if [[ "${ACTUAL_SHA256}" != "${EXPECTED_SHA256}" ]]; then
 fi
 echo "Package source integrity: OK"
 
-if ! bash -n "${UNINSTALL_SOURCE}" || ! bash -n "${MODEL_INSTALL_SOURCE}"; then
+if ! bash -n "${UNINSTALL_SOURCE}" || ! bash -n "${MODEL_INSTALL_SOURCE}" || ! bash -n "${OWNERSHIP_SOURCE}"; then
     echo "ERROR: packaged shell helper failed Bash syntax validation." >&2
     exit 1
 fi
 echo "Packaged shell helper syntax: OK"
+
+# Fail closed on fixed-path collisions before model/native preflights can modify anything.
+# The shipped helper is covered by the release SHA256SUMS verified above.
+# shellcheck source=packaging/linux/install-ownership.sh
+source "${OWNERSHIP_SOURCE}"
+if ! verselatch_preflight_install_ownership; then
+    exit 1
+fi
 
 for audio_tool in whisper-cli aubiotrack aubioonset; do
     if ! command -v "${audio_tool}" >/dev/null 2>&1; then
@@ -297,7 +335,7 @@ if [[ ! "${available_memory_kib}" =~ ^[0-9]+$ ]]; then
     exit 1
 fi
 if (( available_memory_kib < 3276800 )); then
-    echo "ERROR: VerseLatch 1.0.0 requires at least 3.2 GiB of currently available memory for its ASR model." >&2
+    echo "ERROR: VerseLatch 1.0.1 requires at least 3.2 GiB of currently available memory for its ASR model." >&2
     echo "Close heavy applications and run the installer again." >&2
     exit 1
 fi
@@ -652,6 +690,7 @@ required = (
     '<metadata_license>MIT</metadata_license>',
     '<project_license>GPL-3.0-only</project_license>',
     '<developer id="io.github.erhansavas">',
+    '<release version="1.0.1" date="2026-08-13">',
     '<release version="1.0.0" date="2026-08-12">',
     '<url type="homepage">https://github.com/erhansavas/verselatch</url>',
     '<url type="bugtracker">https://github.com/erhansavas/verselatch/issues</url>',
@@ -759,7 +798,7 @@ python3 -I "${PROJECT_ROOT}/tools/verify_tree.py"
 python3 -E -s -B "${APP_STAGE}/verselatch.py" --self-test
 
 printf '%s\n' '[3/13] Isolated staged payload / runtime policy'
-if [[ "$(python3 -E -s -B "${APP_STAGE}/verselatch.py" --version)" != "VerseLatch 1.0.0" ]]; then
+if [[ "$(python3 -E -s -B "${APP_STAGE}/verselatch.py" --version)" != "VerseLatch 1.0.1" ]]; then
     echo "ERROR: staged modular payload/version check failed." >&2
     exit 1
 fi
@@ -799,7 +838,14 @@ if [[ "${expected_stage_inventory}" != "${actual_stage_inventory}" ]]; then
 fi
 printf '%s\n' 'Staged application inventory: OK'
 
-printf '%s\n' '[6/13] Atomic modular application payload replacement'
+# Close the gap between the initial ownership check and the destructive transaction.
+# If any managed path changed while staging/preflight work ran, fail closed now.
+if ! verselatch_preflight_install_ownership; then
+    echo "ERROR: installation ownership changed before replacement; nothing was overwritten." >&2
+    exit 1
+fi
+
+printf '%s\n' '[6/15] Atomic modular application payload replacement'
 if [[ -d "${TARGET_DIR}" && ! -L "${TARGET_DIR}" ]]; then
     APP_HAD=1
     APP_BACKUP="$(mktemp -d --tmpdir="${APP_ROOT}" '.app.backup.XXXXXX')"
@@ -825,7 +871,22 @@ for core_file in "${CORE_SOURCE}"/*.py; do
     fi
 done
 
-printf '%s\n' '[7/13] Deterministic launcher replacement'
+printf '%s\n' '[7/15] Ownership helper replacement'
+if [[ -e "${OWNERSHIP_LIB}" || -L "${OWNERSHIP_LIB}" ]]; then
+    [[ -f "${OWNERSHIP_LIB}" && ! -L "${OWNERSHIP_LIB}" ]] || {
+        echo "ERROR: ownership helper path is unsafe: ${OWNERSHIP_LIB}" >&2; exit 1; }
+    OWNERSHIP_HAD=1
+    OWNERSHIP_BACKUP_DIR="$(mktemp -d --tmpdir="${APP_ROOT}" '.verselatch-ownership-backup.XXXXXX')"
+    cp -a --no-dereference -- "${OWNERSHIP_LIB}" "${OWNERSHIP_BACKUP_DIR}/original"
+fi
+OWNERSHIP_STAGE="$(mktemp --tmpdir="${APP_ROOT}" '.verselatch-ownership.XXXXXX')"
+install -m 0644 -- "${OWNERSHIP_SOURCE}" "${OWNERSHIP_STAGE}"
+bash -n "${OWNERSHIP_STAGE}"
+mv -Tf -- "${OWNERSHIP_STAGE}" "${OWNERSHIP_LIB}"
+OWNERSHIP_STAGE=""
+OWNERSHIP_REPLACED=1
+
+printf '%s\n' '[8/15] Deterministic launcher replacement'
 if [[ -e "${LAUNCHER}" || -L "${LAUNCHER}" ]]; then
     if [[ -d "${LAUNCHER}" && ! -L "${LAUNCHER}" ]]; then
         echo "ERROR: launcher path is a directory: ${LAUNCHER}"
@@ -884,7 +945,7 @@ for diagnostic in "\${STDERR_LOG}" "\${LAST_EXIT}"; do
     fi
 done
 
-# Keep GTK/native stderr persistent and bounded. The tee process exists only
+# Keep GTK/native stderr persistent and rotate it between launches when needed. The tee process exists only
 # for this foreground VerseLatch run and cannot become a background service.
 if [[ -f "\${STDERR_LOG}" ]]; then
     size="\$(stat -c %s -- "\${STDERR_LOG}" 2>/dev/null || printf '0')"
@@ -921,17 +982,17 @@ mv -Tf -- "${LAUNCHER_STAGE}" "${LAUNCHER}"
 LAUNCHER_STAGE=""
 LAUNCHER_REPLACED=1
 
-if [[ "$("${LAUNCHER}" --version)" != "VerseLatch 1.0.0" ]]; then
+if [[ "$("${LAUNCHER}" --version)" != "VerseLatch 1.0.1" ]]; then
     echo "ERROR: launcher/version check failed."
     exit 1
 fi
 
-if ! "${LAUNCHER}" --diagnostics | grep -Fq 'VerseLatch 1.0.0 diagnostics'; then
+if ! "${LAUNCHER}" --diagnostics | grep -Fq 'VerseLatch 1.0.1 diagnostics'; then
     echo "ERROR: persistent diagnostics check failed."
     exit 1
 fi
 
-printf '%s\n' '[8/13] Uninstaller replacement'
+printf '%s\n' '[9/15] Uninstaller replacement'
 if [[ -e "${UNINSTALLER}" || -L "${UNINSTALLER}" ]]; then
     if [[ -d "${UNINSTALLER}" && ! -L "${UNINSTALLER}" ]]; then
         echo "ERROR: uninstaller path is a directory: ${UNINSTALLER}"
@@ -950,7 +1011,7 @@ mv -Tf -- "${UNINSTALLER_STAGE}" "${UNINSTALLER}"
 UNINSTALLER_STAGE=""
 UNINSTALLER_REPLACED=1
 
-printf '%s\n' '[9/13] Desktop entry replacement'
+printf '%s\n' '[10/15] Desktop entry replacement'
 if [[ -e "${DESKTOP}" || -L "${DESKTOP}" ]]; then
     if [[ -d "${DESKTOP}" && ! -L "${DESKTOP}" ]]; then
         echo "ERROR: desktop entry path is a directory: ${DESKTOP}"
@@ -971,7 +1032,7 @@ mv -Tf -- "${DESKTOP_STAGE}" "${DESKTOP}"
 DESKTOP_STAGE=""
 DESKTOP_REPLACED=1
 
-printf '%s\n' '[10/13] Icon replacement'
+printf '%s\n' '[11/15] Icon replacement'
 if [[ -e "${ICON}" || -L "${ICON}" ]]; then
     if [[ -d "${ICON}" && ! -L "${ICON}" ]]; then
         echo "ERROR: icon path is a directory: ${ICON}" >&2
@@ -989,7 +1050,7 @@ mv -Tf -- "${ICON_STAGE}" "${ICON}"
 ICON_STAGE=""
 ICON_REPLACED=1
 
-printf '%s\n' '[11/13] Symbolic icon replacement'
+printf '%s\n' '[12/15] Symbolic icon replacement'
 if [[ -e "${SYMBOLIC_ICON}" || -L "${SYMBOLIC_ICON}" ]]; then
     if [[ -d "${SYMBOLIC_ICON}" && ! -L "${SYMBOLIC_ICON}" ]]; then
         echo "ERROR: symbolic icon path is a directory: ${SYMBOLIC_ICON}" >&2
@@ -1007,7 +1068,7 @@ mv -Tf -- "${SYMBOLIC_ICON_STAGE}" "${SYMBOLIC_ICON}"
 SYMBOLIC_ICON_STAGE=""
 SYMBOLIC_ICON_REPLACED=1
 
-printf '%s\n' '[12/13] AppStream MetaInfo replacement'
+printf '%s\n' '[13/15] AppStream MetaInfo replacement'
 if [[ -e "${METAINFO}" || -L "${METAINFO}" ]]; then
     if [[ -d "${METAINFO}" && ! -L "${METAINFO}" ]]; then
         echo "ERROR: metainfo path is a directory: ${METAINFO}" >&2
@@ -1029,7 +1090,23 @@ if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$(dirname -- "${DESKTOP}")" >/dev/null 2>&1 || true
 fi
 
-printf '%s\n' '[13/13] Desktop/GIO application registration'
+printf '%s\n' '[14/15] Ownership manifest commit'
+if [[ -e "${INSTALL_MANIFEST}" || -L "${INSTALL_MANIFEST}" ]]; then
+    [[ -f "${INSTALL_MANIFEST}" && ! -L "${INSTALL_MANIFEST}" ]] || {
+        echo "ERROR: ownership manifest path is unsafe: ${INSTALL_MANIFEST}" >&2; exit 1; }
+    MANIFEST_HAD=1
+    MANIFEST_BACKUP_DIR="$(mktemp -d --tmpdir="${APP_ROOT}" '.verselatch-manifest-backup.XXXXXX')"
+    cp -a --no-dereference -- "${INSTALL_MANIFEST}" "${MANIFEST_BACKUP_DIR}/original"
+fi
+MANIFEST_STAGE="$(mktemp --tmpdir="${APP_ROOT}" '.verselatch-manifest.XXXXXX')"
+verselatch_write_manifest "${MANIFEST_STAGE}" '1.0.1'
+chmod 0600 -- "${MANIFEST_STAGE}"
+verselatch_validate_manifest "${MANIFEST_STAGE}" '1.0.1'
+mv -Tf -- "${MANIFEST_STAGE}" "${INSTALL_MANIFEST}"
+MANIFEST_STAGE=""
+MANIFEST_REPLACED=1
+
+printf '%s\n' '[15/15] Desktop/GIO application registration'
 python3 -I -B - "${DESKTOP}" "${LAUNCHER}" <<'PY_DESKTOP_REGISTRATION'
 from pathlib import Path
 import os
@@ -1100,8 +1177,10 @@ DESKTOP_REPLACED=0
 ICON_REPLACED=0
 SYMBOLIC_ICON_REPLACED=0
 METAINFO_REPLACED=0
+OWNERSHIP_REPLACED=0
+MANIFEST_REPLACED=0
 
-printf '\nVerseLatch 1.0.0 installed successfully.\n'
+printf '\nVerseLatch 1.0.1 installed successfully.\n'
 printf 'App:     %s\n' "${APP}"
 printf 'Start:   %s\n' "${LAUNCHER}"
 printf 'Remove:  %s\n' "${UNINSTALLER}"

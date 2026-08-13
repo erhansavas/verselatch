@@ -33,7 +33,7 @@ for url in "${HOMEPAGE}" "${BUGTRACKER}"; do
         --show-error \
         --location \
         --max-time 20 \
-        --user-agent 'VerseLatch-release-check/1.0.0' \
+        --user-agent 'VerseLatch-release-check/1.0.1' \
         --output /dev/null \
         -- "${url}"
     printf 'Reachable: %s\n' "${url}"
@@ -41,4 +41,4 @@ done
 
 printf '%s\n' '[3/3] Publication prerequisite'
 printf '%s\n' 'PUBLIC RELEASE CHECK: PASS'
-printf '%s\n' 'Run the exact frozen candidate through the complete native and manual acceptance gates before tagging v1.0.0.'
+printf '%s\n' 'Run the exact frozen candidate through the complete native and manual acceptance gates before tagging v1.0.1.'

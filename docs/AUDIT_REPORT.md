@@ -3,6 +3,8 @@
 
 # VerseLatch 1.0.0 Audit Report
 
+> Historical record: this document describes the 1.0.0 pre-publication audit. The 1.0.1 corrective work is tracked by the changelog, release checklist, and current source tests.
+
 Date: 2026-08-12
 
 ## Scope

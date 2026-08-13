@@ -5,7 +5,7 @@
 
 ## Supported release target
 
-VerseLatch 1.0.0 targets a current **Arch Linux x86_64** desktop with GTK 4/libadwaita and the official Arch `whisper-cpp` and `aubio` packages.
+VerseLatch 1.0.1 targets a current **Arch Linux x86_64** desktop with GTK 4/libadwaita and the official Arch `whisper-cpp` and `aubio` packages.
 
 The code is intentionally ordinary Python/PyGObject and may be portable later, but Windows, Android, Flatpak, and other distributions are not claimed as supported by this release.
 
@@ -27,7 +27,7 @@ The frozen native release gate additionally requires the Arch packages that prov
 
 ## Hardware policy
 
-The Large v3 Turbo model requires substantial memory and compute; the following baselines define the supported 1.0.0 target.
+The Large v3 Turbo model requires substantial memory and compute; the following baselines define the supported 1.0.1 target.
 
 ### Practical baseline
 

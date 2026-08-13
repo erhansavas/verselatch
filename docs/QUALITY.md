@@ -129,7 +129,7 @@ native checks protect the following rules:
 
 ## Performance/resource policy
 
-Large v3 Turbo is compute-intensive and intentionally used as the single 1.0.0 ASR model. VerseLatch checks
+Large v3 Turbo is compute-intensive and intentionally used as the single 1.0.1 ASR model. VerseLatch checks
 available memory before analysis, bounds CPU threads, leaves acceleration
 backend choice to the installed whisper.cpp build, limits native output files,
 and keeps the GTK main loop free of long ASR work.

@@ -1,7 +1,7 @@
 <!-- SPDX-FileCopyrightText: 2026 erhansavas -->
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 
-# VerseLatch 1.0.0 Release Checklist
+# VerseLatch 1.0.1 Release Checklist
 
 Use this checklist on the exact frozen release bytes.
 
@@ -13,7 +13,7 @@ Use this checklist on the exact frozen release bytes.
 - [ ] pytest, editable/regular import-boundary tests, wheel inventory, Ruff, Bandit,
       ShellCheck, REUSE, desktop/AppStream validation, GTK smoke, model verification,
       installer transaction, and GIO registration all pass inside the native gate.
-- [ ] `verselatch --version` prints `VerseLatch 1.0.0`.
+- [ ] `verselatch --version` prints `VerseLatch 1.0.1`.
 - [ ] `verselatch --diagnostics` exits successfully.
 
 ## Functional acceptance
@@ -65,6 +65,6 @@ Use this checklist on the exact frozen release bytes.
 
 - [ ] No source or artifact is rebuilt after final qualification.
 - [ ] Push the exact tested source tree to `main`.
-- [ ] Create annotated tag `v1.0.0` on that exact commit.
+- [ ] Create annotated tag `v1.0.1` on that exact commit.
 - [ ] Upload the exact tested ZIP, tar.gz, and SHA-256 checksum file.
 - [ ] Publish concise release notes based on `docs/CHANGELOG.md`.

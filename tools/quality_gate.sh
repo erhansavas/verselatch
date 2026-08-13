@@ -177,7 +177,7 @@ printf '%s\n' '[Q3/9] Regular wheel build/install and wheel inventory'
 python3 -m pip wheel \
     --disable-pip-version-check --no-deps --no-build-isolation \
     --wheel-dir "${qa_wheels}" "${qa_source}" >/dev/null
-wheel="$(find "${qa_wheels}" -maxdepth 1 -type f -name 'verselatch-1.0.0-*.whl' -print -quit)"
+wheel="$(find "${qa_wheels}" -maxdepth 1 -type f -name 'verselatch-1.0.1-*.whl' -print -quit)"
 [[ -n "${wheel}" ]]
 python3 -I - "${wheel}" <<'PY_WHEEL'
 import sys, zipfile
@@ -250,6 +250,7 @@ printf '%s\n' '[Q5/9] Shell syntax'
 bash -n \
     packaging/linux/install-user.sh \
     packaging/linux/install-model.sh \
+    packaging/linux/install-ownership.sh \
     packaging/linux/uninstall-user.sh \
     packaging/linux/verselatch \
     tools/native_release_check.sh \
@@ -276,6 +277,7 @@ else
     shellcheck \
         packaging/linux/install-user.sh \
         packaging/linux/install-model.sh \
+        packaging/linux/install-ownership.sh \
         packaging/linux/uninstall-user.sh \
         packaging/linux/verselatch \
         tools/native_release_check.sh \

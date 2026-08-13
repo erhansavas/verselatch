@@ -7,7 +7,7 @@ Processing runs on this device. VerseLatch does not send telemetry or run a back
 
 ## Runtime
 
-VerseLatch 1.0.0 does not send audio, lyrics, generated text, file names, diagnostics, or usage data to a server. It contains no telemetry, analytics, advertising, cloud ASR, cloud lyric lookup, account system, or automatic update check.
+VerseLatch 1.0.1 does not send audio, lyrics, generated text, file names, diagnostics, or usage data to a server. It contains no telemetry, analytics, advertising, cloud ASR, cloud lyric lookup, account system, or automatic update check.
 
 Whisper and aubio analysis run through local system executables. ASR cache and diagnostic logs stay in the user's XDG directories.
 

@@ -98,6 +98,69 @@ def require_regular_file_state(
         )
     return current_state
 
+def require_analysis_source_states(
+    *,
+    current_audio_path: Path | None,
+    analyzed_audio_path: Path | None,
+    analyzed_audio_state: tuple[int, int, int, int, int] | None,
+    current_lyrics_path: Path | None,
+    analyzed_lyrics_path: Path | None,
+    analyzed_lyrics_state: tuple[int, int, int, int, int] | None,
+    maximum_audio_bytes: int,
+    maximum_lyrics_bytes: int,
+) -> None:
+    """Require Save inputs to be the exact sources used by the analysis result."""
+    if analyzed_audio_path is None or analyzed_audio_state is None:
+        raise VerseLatchError(
+            "No validated analysis source is available. Run analysis again before saving."
+        )
+    if current_audio_path != analyzed_audio_path:
+        raise VerseLatchError(
+            "Audio selection changed after analysis. Run analysis again before saving."
+        )
+    try:
+        require_regular_file_state(
+            analyzed_audio_path,
+            analyzed_audio_state,
+            description="Audio source",
+            maximum_bytes=maximum_audio_bytes,
+        )
+    except VerseLatchError as exc:
+        raise VerseLatchError(
+            "Audio changed or became unsafe after analysis. Run analysis again before saving."
+        ) from exc
+
+    if analyzed_lyrics_path is None:
+        if analyzed_lyrics_state is not None:
+            raise VerseLatchError(
+                "Analysis source state is inconsistent. Run analysis again before saving."
+            )
+        if current_lyrics_path is not None:
+            raise VerseLatchError(
+                "Lyrics selection changed after analysis. Run analysis again before saving."
+            )
+        return
+
+    if analyzed_lyrics_state is None:
+        raise VerseLatchError(
+            "No validated lyrics source is available. Run analysis again before saving."
+        )
+    if current_lyrics_path != analyzed_lyrics_path:
+        raise VerseLatchError(
+            "Lyrics selection changed after analysis. Run analysis again before saving."
+        )
+    try:
+        require_regular_file_state(
+            analyzed_lyrics_path,
+            analyzed_lyrics_state,
+            description="Lyrics source",
+            maximum_bytes=maximum_lyrics_bytes,
+        )
+    except VerseLatchError as exc:
+        raise VerseLatchError(
+            "Lyrics changed or became unsafe after analysis. Run analysis again before saving."
+        ) from exc
+
 def safe_read_text(
     path: Path,
 ) -> str:
@@ -184,6 +247,35 @@ def fsync_directory(
         os.fsync(directory_fd)
     finally:
         os.close(directory_fd)
+
+def safe_write_reviewed_lrc(
+    *,
+    content: str,
+    current_audio_path: Path | None,
+    analyzed_audio_path: Path | None,
+    analyzed_audio_state: tuple[int, int, int, int, int] | None,
+    current_lyrics_path: Path | None,
+    analyzed_lyrics_path: Path | None,
+    analyzed_lyrics_state: tuple[int, int, int, int, int] | None,
+    maximum_audio_bytes: int,
+    maximum_lyrics_bytes: int,
+) -> tuple[Path, Path | None]:
+    """Validate analyzed sources and immediately enter the atomic save path."""
+    require_analysis_source_states(
+        current_audio_path=current_audio_path,
+        analyzed_audio_path=analyzed_audio_path,
+        analyzed_audio_state=analyzed_audio_state,
+        current_lyrics_path=current_lyrics_path,
+        analyzed_lyrics_path=analyzed_lyrics_path,
+        analyzed_lyrics_state=analyzed_lyrics_state,
+        maximum_audio_bytes=maximum_audio_bytes,
+        maximum_lyrics_bytes=maximum_lyrics_bytes,
+    )
+    if analyzed_audio_path is None:
+        raise VerseLatchError(
+            "No validated analysis source is available. Run analysis again before saving."
+        )
+    return safe_write_lrc(analyzed_audio_path, content)
 
 def safe_write_lrc(
     audio_path: Path,
