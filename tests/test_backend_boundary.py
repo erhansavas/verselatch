@@ -3,29 +3,34 @@
 
 import pytest
 
-from verselatch_app.backend import AnalysisBackend, AnalysisJob, AnalysisRequest
+from verselatch_app.backend import (
+    AnalysisEvidence,
+    EvidenceBackend,
+    EvidenceJob,
+    EvidenceRequest,
+)
 from verselatch_app.model import ModelRequirement, ModelVerification
-from verselatch_app.session import AnalysisResult, SourceIdentity
+from verselatch_app.session import SourceIdentity
 
 
 class FakeJob:
-    def __init__(self, result: AnalysisResult) -> None:
+    def __init__(self, result: AnalysisEvidence) -> None:
         self._result = result
         self.cancelled = False
 
     def cancel(self) -> None:
         self.cancelled = True
 
-    def result(self, timeout: float | None = None) -> AnalysisResult:
+    def result(self, timeout: float | None = None) -> AnalysisEvidence:
         return self._result
 
 
 class FakeBackend:
     def __init__(self, job: FakeJob) -> None:
         self.job = job
-        self.requests: list[AnalysisRequest] = []
+        self.requests: list[EvidenceRequest] = []
 
-    def start(self, request: AnalysisRequest) -> FakeJob:
+    def start(self, request: EvidenceRequest) -> FakeJob:
         self.requests.append(request)
         return self.job
 
@@ -41,33 +46,32 @@ def verified_model() -> ModelVerification:
     )
 
 
-def test_analysis_backend_boundary_has_no_process_api() -> None:
+def test_evidence_backend_boundary_has_no_process_or_lyrics_api() -> None:
     audio = SourceIdentity("content://media/audio/42", ("etag", 7))
-    expected = AnalysisResult(
-        preview="[00:01.00]line\n",
-        audio=audio,
-        lyrics=None,
-        save_allowed_after_review=True,
+    expected = AnalysisEvidence(
+        segments=({"start": 0.5, "end": 1.0, "text": "line"},),
+        beats=(0.4, 0.9),
+        onsets=(0.5,),
     )
     job = FakeJob(expected)
     backend = FakeBackend(job)
-    request = AnalysisRequest(
+    request = EvidenceRequest(
         audio=audio,
-        lyrics=None,
         language="tr",
         model=verified_model(),
     )
 
-    assert isinstance(job, AnalysisJob)
-    assert isinstance(backend, AnalysisBackend)
+    assert isinstance(job, EvidenceJob)
+    assert isinstance(backend, EvidenceBackend)
     started = backend.start(request)
     assert started.result() == expected
     started.cancel()
     assert job.cancelled is True
     assert backend.requests == [request]
+    assert not hasattr(request, "lyrics")
 
 
-def test_analysis_request_rejects_unverified_model() -> None:
+def test_evidence_request_rejects_unverified_model() -> None:
     model = verified_model()
     bad = ModelVerification(
         requirement=model.requirement,
@@ -78,4 +82,13 @@ def test_analysis_request_rejects_unverified_model() -> None:
     )
 
     with pytest.raises(ValueError, match="verification"):
-        AnalysisRequest(audio=SourceIdentity("audio", 1), lyrics=None, language="auto", model=bad)
+        EvidenceRequest(audio=SourceIdentity("audio", 1), language="auto", model=bad)
+
+
+def test_evidence_request_requires_language() -> None:
+    with pytest.raises(ValueError, match="language"):
+        EvidenceRequest(
+            audio=SourceIdentity("audio", 1),
+            language=" ",
+            model=verified_model(),
+        )
