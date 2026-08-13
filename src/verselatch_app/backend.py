@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from .model import ModelVerification
 from .session import AnalysisResult, SourceIdentity
 
 
@@ -16,6 +17,11 @@ class AnalysisRequest:
     audio: SourceIdentity
     lyrics: SourceIdentity | None
     language: str
+    model: ModelVerification
+
+    def __post_init__(self) -> None:
+        if not self.model.ready:
+            raise ValueError("model verification required")
 
 
 @runtime_checkable
