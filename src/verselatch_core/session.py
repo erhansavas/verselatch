@@ -102,8 +102,13 @@ class WorkflowState:
         if run_id != self.active_run_id:
             return False
 
+        cancelled = self.cancel_requested
         self.active_run_id = None
         self.cancel_requested = False
+
+        if cancelled:
+            self._invalidate_result()
+            return False
 
         if result.audio != self.audio or result.lyrics != self.lyrics:
             self._invalidate_result()
