@@ -22,13 +22,16 @@ jobs:
           git python python-pip python-setuptools python-pytest python-defusedxml
           python-wheel ruff bandit shellcheck reuse desktop-file-utils appstream
       - name: Check out frozen release
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           ref: v1.0.0
           persist-credentials: false
-      - name: Verify exact frozen commit
+      - name: Verify and stage exact frozen tree
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           test "$(git rev-parse HEAD)" = "c32efeb056fbc54d2a19fc768c3a4771fe067994"
+          mkdir -p /tmp/verselatch-release
+          git archive --format=tar HEAD | tar -xf - -C /tmp/verselatch-release
       - name: Run independent native quality gate
+        working-directory: /tmp/verselatch-release
         run: ./tools/quality_gate.sh --public-metadata
