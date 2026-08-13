@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2026 erhansavas
+# SPDX-License-Identifier: GPL-3.0-only
+name: Native audio qualification
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-x86_64:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install native test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake ffmpeg ninja-build
+      - name: Build decoder candidate
+        run: |
+          cmake -S native/worker -B "$RUNNER_TEMP/verselatch-worker-build" -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/verselatch-worker-build" --target verselatch-worker verselatch-audio-smoke --parallel 2
+      - name: Exercise worker protocol and audio formats
+        run: |
+          python3 tests/native_worker_ci.py \
+            "$RUNNER_TEMP/verselatch-worker-build/verselatch-worker" \
+            "$RUNNER_TEMP/verselatch-worker-build/verselatch-audio-smoke" \
+            "$RUNNER_TEMP/verselatch-audio-fixtures"
