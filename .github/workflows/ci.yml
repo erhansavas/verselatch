@@ -74,6 +74,15 @@ jobs:
           python3 tools/stage_linux_worker_bundle.py verify \
             --bundle "$bundle" \
             --source-commit "$GITHUB_SHA"
+          app_payload="$RUNNER_TEMP/verselatch-app-payload"
+          test ! -e "$app_payload"
+          python3 tools/stage_linux_app_payload.py stage \
+            --worker-bundle "$bundle" \
+            --output "$app_payload" \
+            --source-commit "$GITHUB_SHA"
+          python3 tools/stage_linux_app_payload.py verify \
+            --bundle "$app_payload" \
+            --source-commit "$GITHUB_SHA"
       - name: Portable external static gates
         run: |
           cd "$RUNNER_TEMP/verselatch-release-tree"
