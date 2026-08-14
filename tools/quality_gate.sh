@@ -195,6 +195,10 @@ required = {
     'verselatch_core/process.py',
     'verselatch_core/rhythm.py',
     'verselatch_core/storage.py',
+    'verselatch_platform/__init__.py',
+    'verselatch_platform/posix_backend.py',
+    'verselatch_platform/posix_files.py',
+    'verselatch_platform/posix_runtime.py',
 }
 missing = required - names
 assert not missing, sorted(missing)

@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 APP = SRC / "verselatch.py"
 CORE = SRC / "verselatch_core"
+APP_LAYER = SRC / "verselatch_app"
+PLATFORM = SRC / "verselatch_platform"
 DOCS = ROOT / "docs"
 PACKAGING = ROOT / "packaging" / "linux"
 MODEL_SHA = "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69"
@@ -148,7 +150,7 @@ for stale in (
 ):
     if (ROOT / stale).exists():
         fail(f"stale pre-refactor root path present: {stale}")
-for required_dir in (SRC, CORE, DOCS, PACKAGING, ROOT / "LICENSES", ROOT / ".github"):
+for required_dir in (SRC, CORE, APP_LAYER, PLATFORM, DOCS, PACKAGING, ROOT / "LICENSES", ROOT / ".github"):
     if not required_dir.is_dir() or required_dir.is_symlink():
         fail(f"required project directory missing or unsafe: {required_dir.relative_to(ROOT)}")
 for required_doc in (
@@ -203,8 +205,13 @@ if setuptools_cfg.get("package-dir") != {"": "src"}:
 if setuptools_cfg.get("py-modules") != ["verselatch"]:
     fail("setuptools must package the verselatch module")
 find_cfg = setuptools_cfg.get("packages", {}).get("find", {})
-if find_cfg.get("where") != ["src"] or find_cfg.get("include") != ["verselatch_core*"]:
-    fail("setuptools package discovery must be restricted to src/verselatch_core")
+expected_packages = [
+    "verselatch_core*",
+    "verselatch_app*",
+    "verselatch_platform*",
+]
+if find_cfg.get("where") != ["src"] or find_cfg.get("include") != expected_packages:
+    fail("setuptools package discovery must be restricted to reviewed first-party packages")
 pytest_addopts = str(pytest_cfg.get("addopts", ""))
 for required_option in ("--import-mode=importlib", "--strict-config", "--strict-markers", "--disable-plugin-autoload"):
     if required_option not in pytest_addopts:
@@ -263,7 +270,12 @@ for path in python_sources:
                     fail(f"sys.path assignment forbidden: {path.relative_to(ROOT)}:{getattr(node, 'lineno', '?')}")
 
 # Runtime Python remains network-free and shell-free.
-runtime_python = [APP, *sorted(CORE.glob("*.py"))]
+runtime_python = [
+    APP,
+    *sorted(CORE.glob("*.py")),
+    *sorted(APP_LAYER.glob("*.py")),
+    *sorted(PLATFORM.glob("*.py")),
+]
 for path in runtime_python:
     _, tree = parse_python(path)
     for node in ast.walk(tree):
@@ -464,6 +476,12 @@ for path in sorted(CORE.glob("*.py")):
     text = read(path)
     if "import gi" in text or "from gi.repository" in text:
         fail(f"GTK dependency leaked into core module: {path.name}")
+    if f"{SPDX_COPYRIGHT_TAG} 2026 erhansavas" not in text or f"{SPDX_LICENSE_TAG} GPL-3.0-only" not in text:
+        fail(f"missing first-party SPDX header: {path.relative_to(ROOT)}")
+for path in sorted(APP_LAYER.glob("*.py")):
+    text = read(path)
+    if "import gi" in text or "from gi.repository" in text:
+        fail(f"GUI toolkit dependency leaked into application-state module: {path.name}")
     if f"{SPDX_COPYRIGHT_TAG} 2026 erhansavas" not in text or f"{SPDX_LICENSE_TAG} GPL-3.0-only" not in text:
         fail(f"missing first-party SPDX header: {path.relative_to(ROOT)}")
 
